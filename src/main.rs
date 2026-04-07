@@ -65,12 +65,24 @@ async fn cmd_gateway(cfg: AppConfig) -> anyhow::Result<()> {
         None
     };
 
+    // Discord HTTP for notifications (if Discord is enabled)
+    let discord_notify_http = if cfg.channels.discord.enabled && !cfg.channels.discord.bot_token.is_empty() {
+        Some(Arc::new(serenity::http::Http::new(&cfg.channels.discord.bot_token)))
+    } else {
+        None
+    };
+
+    let notify_channel_id = cfg.github.notify_discord_channel_id();
+
     // Shared cron context
     let cron_ctx = Arc::new(CronContext {
         github,
         github_config: cfg.github.clone(),
         cron_config: cfg.cron.clone(),
-        discord_http: None,
+        monitor_config: cfg.monitor.clone(),
+        email_config: if cfg.email.enabled { Some(cfg.email.clone()) } else { None },
+        discord_http: discord_notify_http,
+        notify_channel_id,
     });
 
     // Telegram
@@ -104,8 +116,15 @@ async fn cmd_gateway(cfg: AppConfig) -> anyhow::Result<()> {
         });
     }
 
-    // Cron scheduler
-    if cron_ctx.github.is_some() && !cfg.github.repos.is_empty() {
+    // Cron scheduler — start if any cron-worthy config exists
+    let has_cron_work = (cron_ctx.github.is_some() && !cfg.github.repos.is_empty())
+        || !cfg.monitor.services.is_empty()
+        || !cfg.monitor.endpoints.is_empty()
+        || cfg.monitor.docker
+        || cfg.monitor.pm2
+        || cfg.email.enabled;
+
+    if has_cron_work {
         info!("Starting cron scheduler");
         let cron_ctx_clone = Arc::clone(&cron_ctx);
         tokio::spawn(async move {
@@ -171,7 +190,10 @@ async fn cmd_github(cfg: AppConfig, sub: GithubCommand) -> anyhow::Result<()> {
         github: Some(github),
         github_config: cfg.github.clone(),
         cron_config: cfg.cron.clone(),
+        monitor_config: cfg.monitor.clone(),
+        email_config: None,
         discord_http: None,
+        notify_channel_id: None,
     };
 
     match sub {
