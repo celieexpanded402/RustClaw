@@ -1,0 +1,35 @@
+# RustClaw configuration
+# Copy to ~/.rustclaw/config.toml or set RUSTCLAW_CONFIG=/path/to/config.toml
+
+[gateway]
+port = 18789
+bind = "127.0.0.1"
+token = ""              # Empty = no auth required
+
+[agent]
+provider = "anthropic"  # "anthropic" or "openai"
+api_key = ""            # Or set ANTHROPIC_API_KEY / OPENAI_API_KEY env var
+base_url = ""           # Leave empty for defaults (api.anthropic.com / localhost:11434)
+model = "claude-sonnet-4-20250514"
+system_prompt = "You are a helpful assistant."
+
+[channels.telegram]
+enabled = false
+bot_token = ""
+allowed_user_ids = []   # Empty = allow all users
+stream_edit = true      # Edit message in-place to simulate streaming
+
+[channels.discord]
+enabled = false
+bot_token = ""
+allowed_guild_ids = []  # Empty = all servers
+mention_only = true     # Only respond to @mentions and DMs
+
+[github]
+token = ""                          # GitHub Personal Access Token
+repos = []                          # e.g. ["owner/repo"]
+notify_discord_channel = ""         # Discord channel ID for scan notifications
+
+[cron]
+github_scan = "0 0 9 * * *"        # Daily at 09:00 (sec min hr day mon dow)
+auto_pr = false                     # Reserved for future use
