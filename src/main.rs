@@ -44,7 +44,9 @@ async fn cmd_gateway(cfg: AppConfig) -> anyhow::Result<()> {
     let listen = cfg.gateway.listen_addr();
     info!("Starting rustclaw gateway on {listen}");
 
-    let sessions = SessionStore::new();
+    let db_path = resolve_db_path();
+    let sessions = SessionStore::open(&db_path)?;
+    info!("Session store: {db_path}");
     let runner = Arc::new(AgentRunner::new(cfg.agent.clone()));
 
     // GitHub client
@@ -269,6 +271,20 @@ async fn cmd_health(cfg: &AppConfig) -> anyhow::Result<()> {
     }
 
     Ok(())
+}
+
+fn resolve_db_path() -> String {
+    if let Ok(p) = std::env::var("RUSTCLAW_DB") {
+        return p;
+    }
+    if let Some(home) = std::env::var_os("HOME") {
+        let mut p = std::path::PathBuf::from(home);
+        p.push(".rustclaw");
+        p.push("sessions.db");
+        p.to_string_lossy().to_string()
+    } else {
+        "sessions.db".to_string()
+    }
 }
 
 fn init_tracing() {
