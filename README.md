@@ -1,3 +1,5 @@
+🌐 [繁體中文](docs/README.zh-TW.md) · [简体中文](docs/README.zh-CN.md) · [日本語](docs/README.ja.md) · [한국어](docs/README.ko.md) · [Español](docs/README.es.md) · [Português](docs/README.pt.md)
+
 # RustClaw
 
 **A lean, mean Rust replacement for OpenClaw.** Single binary. No runtime. Full agent capabilities.
