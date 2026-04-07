@@ -1,13 +1,10 @@
-# Build stage
-FROM rust:1-alpine AS builder
-RUN apk add --no-cache musl-dev
-WORKDIR /build
-COPY Cargo.toml Cargo.lock ./
-COPY src/ src/
-RUN cargo build --release && strip target/release/rustclaw
+FROM rust:1.77-slim as builder
+WORKDIR /app
+COPY . .
+RUN cargo build --release
 
-# Runtime stage
-FROM scratch
-COPY --from=builder /build/target/release/rustclaw /rustclaw
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-ENTRYPOINT ["/rustclaw", "gateway"]
+FROM debian:bookworm-slim
+RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
+COPY --from=builder /app/target/release/rustclaw /usr/local/bin/rustclaw
+EXPOSE 18789
+CMD ["rustclaw", "gateway"]

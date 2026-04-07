@@ -1,0 +1,47 @@
+{
+  "meta": {
+    "name": "RustClaw",
+    "description": "Lean Rust AI agent: 6MB binary, 7.9MB RAM. Telegram + Discord + GitHub auto-PR. Ollama/Anthropic support.",
+    "coverImage": "https://raw.githubusercontent.com/Adaimade/RustClaw/main/docs/cover.png",
+    "variables": [
+      {
+        "key": "RUSTCLAW__AGENT__PROVIDER",
+        "type": "STRING",
+        "name": "LLM Provider",
+        "description": "anthropic or openai (for Ollama use openai)",
+        "default": "anthropic"
+      },
+      {
+        "key": "RUSTCLAW__AGENT__API_KEY",
+        "type": "PASSWORD",
+        "name": "API Key",
+        "description": "Anthropic API key or 'ollama' for local"
+      },
+      {
+        "key": "RUSTCLAW__AGENT__MODEL",
+        "type": "STRING",
+        "name": "Model",
+        "description": "Model name",
+        "default": "claude-sonnet-4-20250514"
+      },
+      {
+        "key": "RUSTCLAW__CHANNELS__TELEGRAM__BOT_TOKEN",
+        "type": "PASSWORD",
+        "name": "Telegram Bot Token",
+        "description": "From @BotFather (optional)"
+      },
+      {
+        "key": "RUSTCLAW__CHANNELS__DISCORD__BOT_TOKEN",
+        "type": "PASSWORD",
+        "name": "Discord Bot Token",
+        "description": "From Discord Developer Portal (optional)"
+      },
+      {
+        "key": "RUSTCLAW__GITHUB__TOKEN",
+        "type": "PASSWORD",
+        "name": "GitHub Token",
+        "description": "Personal Access Token with repo scope (optional)"
+      }
+    ]
+  }
+}
