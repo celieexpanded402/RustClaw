@@ -21,6 +21,7 @@ use crate::config::AppConfig;
 use crate::cron::CronContext;
 use crate::session::store::SessionStore;
 use crate::tools::github::GitHubClient;
+use crate::tools::mcp::McpManager;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -48,6 +49,26 @@ async fn cmd_gateway(cfg: AppConfig) -> anyhow::Result<()> {
     let sessions = SessionStore::open(&db_path)?;
     info!("Session store: {db_path}");
     let runner = Arc::new(AgentRunner::new(cfg.agent.clone()));
+
+    // MCP servers
+    let mcp: Option<Arc<McpManager>> = if !cfg.mcp.servers.is_empty() {
+        match McpManager::start(&cfg.mcp.servers).await {
+            Ok(mgr) => {
+                info!(
+                    servers = mgr.server_count(),
+                    tools = mgr.tool_count(),
+                    "MCP client initialized"
+                );
+                Some(Arc::new(mgr))
+            }
+            Err(e) => {
+                tracing::warn!(%e, "Failed to start MCP servers");
+                None
+            }
+        }
+    } else {
+        None
+    };
 
     // GitHub client
     let github = if !cfg.github.token.is_empty() {
@@ -109,8 +130,9 @@ async fn cmd_gateway(cfg: AppConfig) -> anyhow::Result<()> {
         };
         let dc_tools = cfg.tools.clone();
         let dc_email = if cfg.email.enabled { Some(cfg.email.clone()) } else { None };
+        let dc_mcp = mcp.clone();
         tokio::spawn(async move {
-            if let Err(e) = dc.start(dc_runner, dc_cron, dc_tools, dc_email).await {
+            if let Err(e) = dc.start(dc_runner, dc_cron, dc_tools, dc_email, dc_mcp).await {
                 tracing::error!(%e, "Discord channel exited with error");
             }
         });
@@ -146,10 +168,14 @@ async fn cmd_agent(cfg: AppConfig, message: &str, stream: bool) -> anyhow::Resul
     if tools_config.enabled {
         // Agentic mode with tool calling
         let mut stdout = std::io::stdout();
-        let no_discord = None;
-        let email_cfg = if cfg.email.enabled { Some(cfg.email.clone()) } else { None };
+        let tc = crate::agent::runner::ToolContext {
+            config: tools_config,
+            discord_http: None,
+            email_config: if cfg.email.enabled { Some(cfg.email.clone()) } else { None },
+            mcp: None,
+        };
         let result = runner
-            .run_agentic(message, &[], &tools_config, &no_discord, &email_cfg, |token| {
+            .run_agentic(message, &[], &tc, |token| {
                 let _ = write!(stdout, "{token}");
                 let _ = stdout.flush();
             })

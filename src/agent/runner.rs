@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use anyhow::{bail, Context, Result};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -6,6 +8,7 @@ use tracing::{debug, info, warn};
 
 use crate::config::{AgentConfig, EmailConfig, ToolsConfig};
 use crate::tools::executor::{self, DiscordHttp, ToolCall};
+use crate::tools::mcp::McpManager;
 
 const MAX_TOOL_ITERATIONS: usize = 10;
 
@@ -15,6 +18,15 @@ const MAX_TOOL_ITERATIONS: usize = 10;
 pub struct Message {
     pub role: String,
     pub content: String,
+}
+
+/// Bundled tool context passed to the agentic loop.
+#[derive(Clone)]
+pub struct ToolContext {
+    pub config: ToolsConfig,
+    pub discord_http: DiscordHttp,
+    pub email_config: Option<EmailConfig>,
+    pub mcp: Option<Arc<McpManager>>,
 }
 
 pub struct AgentRunner {
@@ -54,19 +66,15 @@ impl AgentRunner {
         &self,
         input: &str,
         history: &[Message],
-        tools_config: &ToolsConfig,
-        discord_http: &DiscordHttp,
-        email_config: &Option<EmailConfig>,
+        tc: &ToolContext,
         mut on_token: impl FnMut(String) + Send,
     ) -> Result<String> {
         match self.config.provider.as_str() {
             "anthropic" => {
-                self.agentic_anthropic(input, history, tools_config, discord_http, email_config, &mut on_token)
-                    .await
+                self.agentic_anthropic(input, history, tc, &mut on_token).await
             }
             "openai" => {
-                self.agentic_openai(input, history, tools_config, discord_http, email_config, &mut on_token)
-                    .await
+                self.agentic_openai(input, history, tc, &mut on_token).await
             }
             other => bail!("unknown provider: {other}"),
         }
@@ -78,9 +86,7 @@ impl AgentRunner {
         &self,
         input: &str,
         history: &[Message],
-        tools_config: &ToolsConfig,
-        discord_http: &DiscordHttp,
-        email_config: &Option<EmailConfig>,
+        tc: &ToolContext,
         on_token: &mut (impl FnMut(String) + Send),
     ) -> Result<String> {
         let base = if self.config.base_url.is_empty() {
@@ -101,7 +107,7 @@ impl AgentRunner {
         }
         messages.push(serde_json::json!({ "role": "user", "content": input }));
 
-        let tools = executor::tool_definitions();
+        let tools = executor::all_tool_definitions(&tc.mcp);
         let mut full_response = String::new();
 
         for iteration in 0..MAX_TOOL_ITERATIONS {
@@ -181,7 +187,7 @@ impl AgentRunner {
             for (id, name, arguments) in tool_uses {
                 info!(tool = %name, "Executing tool");
                 let call = ToolCall { name, arguments };
-                let result = executor::execute_tool(&call, &id, tools_config, discord_http, email_config).await;
+                let result = executor::execute_tool(&call, &id, &tc.config, &tc.discord_http, &tc.email_config, &tc.mcp).await;
                 tool_results.push(serde_json::json!({
                     "type": "tool_result",
                     "tool_use_id": result.tool_use_id,
@@ -201,9 +207,7 @@ impl AgentRunner {
         &self,
         input: &str,
         history: &[Message],
-        tools_config: &ToolsConfig,
-        discord_http: &DiscordHttp,
-        email_config: &Option<EmailConfig>,
+        tc: &ToolContext,
         on_token: &mut (impl FnMut(String) + Send),
     ) -> Result<String> {
         let base = if self.config.base_url.is_empty() {
@@ -231,7 +235,7 @@ impl AgentRunner {
         messages.push(serde_json::json!({ "role": "user", "content": input }));
 
         // Convert tool definitions to OpenAI format
-        let tools = openai_tool_definitions();
+        let tools = openai_tool_definitions(&tc.mcp);
         let mut full_response = String::new();
 
         for iteration in 0..MAX_TOOL_ITERATIONS {
@@ -302,9 +306,9 @@ impl AgentRunner {
             messages.push(serde_json::json!({ "role": "assistant", "content": message.get("content"), "tool_calls": tool_calls }));
 
             // Execute each tool call
-            for tc in &tool_calls {
-                let id = tc.get("id").and_then(|v| v.as_str()).unwrap_or("").to_string();
-                let func = tc.get("function").cloned().unwrap_or(serde_json::json!({}));
+            for tool_call_val in &tool_calls {
+                let id = tool_call_val.get("id").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                let func = tool_call_val.get("function").cloned().unwrap_or(serde_json::json!({}));
                 let name = func.get("name").and_then(|v| v.as_str()).unwrap_or("").to_string();
                 let args_str = func.get("arguments").and_then(|v| v.as_str()).unwrap_or("{}");
                 let arguments: serde_json::Value =
@@ -312,7 +316,7 @@ impl AgentRunner {
 
                 info!(tool = %name, "Executing tool");
                 let call = ToolCall { name, arguments };
-                let result = executor::execute_tool(&call, &id, tools_config, discord_http, email_config).await;
+                let result = executor::execute_tool(&call, &id, &tc.config, &tc.discord_http, &tc.email_config, &tc.mcp).await;
 
                 messages.push(serde_json::json!({
                     "role": "tool",
@@ -561,8 +565,8 @@ fn extract_openai_delta(v: &serde_json::Value) -> Option<String> {
 }
 
 /// Convert tool definitions to OpenAI function calling format.
-fn openai_tool_definitions() -> serde_json::Value {
-    let anthropic_tools = executor::tool_definitions();
+fn openai_tool_definitions(mcp: &Option<Arc<McpManager>>) -> serde_json::Value {
+    let anthropic_tools = executor::all_tool_definitions(mcp);
     let tools: Vec<serde_json::Value> = anthropic_tools
         .as_array()
         .unwrap()

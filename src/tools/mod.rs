@@ -4,5 +4,6 @@ pub mod exec;
 pub mod executor;
 pub mod fs;
 pub mod github;
+pub mod mcp;
 pub mod search;
 pub mod system;

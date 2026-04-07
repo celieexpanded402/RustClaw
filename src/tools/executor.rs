@@ -6,7 +6,7 @@ use tracing::info;
 
 use crate::config::{EmailConfig, ToolsConfig};
 
-use super::{discord as discord_tools, email, exec, fs, search, system};
+use super::{discord as discord_tools, email, exec, fs, mcp::McpManager, search, system};
 
 #[derive(Debug, Deserialize)]
 pub struct ToolCall {
@@ -30,7 +30,23 @@ pub async fn execute_tool(
     config: &ToolsConfig,
     discord_http: &DiscordHttp,
     email_config: &Option<EmailConfig>,
+    mcp: &Option<Arc<McpManager>>,
 ) -> ToolResult {
+    // Route MCP tools first
+    if let Some(mcp_mgr) = mcp {
+        if mcp_mgr.is_mcp_tool(&call.name) {
+            let content = match mcp_mgr.call_tool(&call.name, &call.arguments).await {
+                Ok(c) => c,
+                Err(e) => format!("MCP Error: {e}"),
+            };
+            info!(tool = %call.name, "MCP tool executed");
+            return ToolResult {
+                tool_use_id: tool_id.to_string(),
+                content,
+            };
+        }
+    }
+
     let content = match execute_inner(call, config, discord_http, email_config).await {
         Ok(c) => c,
         Err(e) => format!("Error: {e}"),
@@ -250,7 +266,19 @@ fn arg_u64(args: &serde_json::Value, key: &str) -> Result<u64> {
         .ok_or_else(|| anyhow::anyhow!("Missing or invalid argument: {key}"))
 }
 
-/// JSON Schema definitions for all tools, to be sent to the LLM.
+/// All tool definitions: local + MCP. This is what gets sent to the LLM.
+pub fn all_tool_definitions(mcp: &Option<Arc<McpManager>>) -> serde_json::Value {
+    let mut local = tool_definitions();
+    if let Some(mcp_mgr) = mcp {
+        let mcp_tools = mcp_mgr.tool_definitions();
+        if let Some(arr) = local.as_array_mut() {
+            arr.extend(mcp_tools);
+        }
+    }
+    local
+}
+
+/// JSON Schema definitions for local (built-in) tools.
 pub fn tool_definitions() -> serde_json::Value {
     serde_json::json!([
         {

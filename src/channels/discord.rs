@@ -9,11 +9,13 @@ use serenity::prelude::*;
 use tokio::sync::mpsc;
 use tracing::{error, info, warn};
 
+use crate::agent::runner::ToolContext;
 use crate::agent::{AgentRunner, Message as AgentMessage};
 use crate::config::{DiscordConfig, EmailConfig, ToolsConfig};
 use crate::cron::CronContext;
 use crate::session::store::SessionStore;
 use crate::tools::executor::DiscordHttp;
+use crate::tools::mcp::McpManager;
 
 const MAX_RETRIES: u32 = 3;
 const EDIT_INTERVAL: Duration = Duration::from_millis(1000);
@@ -35,6 +37,7 @@ impl DiscordChannel {
         cron_ctx: Option<Arc<CronContext>>,
         tools_config: ToolsConfig,
         email_config: Option<EmailConfig>,
+        mcp: Option<Arc<McpManager>>,
     ) -> Result<()> {
         if self.config.bot_token.is_empty() {
             anyhow::bail!("Discord bot_token is empty");
@@ -56,6 +59,7 @@ impl DiscordChannel {
             tools_config,
             discord_http,
             email_config,
+            mcp,
         };
 
         let mut client = Client::builder(&handler.config.bot_token, intents)
@@ -77,6 +81,7 @@ struct Handler {
     tools_config: ToolsConfig,
     discord_http: DiscordHttp,
     email_config: Option<EmailConfig>,
+    mcp: Option<Arc<McpManager>>,
 }
 
 #[async_trait]
@@ -160,16 +165,19 @@ impl EventHandler for Handler {
         let runner_config = self.runner.config().clone();
         let input_owned = input.clone();
         let history_owned = history.clone();
-        let tools_config = self.tools_config.clone();
-        let discord_http = self.discord_http.clone();
-        let email_config = self.email_config.clone();
+        let tc = ToolContext {
+            config: self.tools_config.clone(),
+            discord_http: self.discord_http.clone(),
+            email_config: self.email_config.clone(),
+            mcp: self.mcp.clone(),
+        };
 
         tokio::spawn(async move {
             let r = AgentRunner::new(runner_config);
             let tx2 = tx.clone();
-            if tools_config.enabled {
+            if tc.config.enabled {
                 let result = r
-                    .run_agentic(&input_owned, &history_owned, &tools_config, &discord_http, &email_config, move |token| {
+                    .run_agentic(&input_owned, &history_owned, &tc, move |token| {
                         let _ = tx2.try_send(token);
                     })
                     .await;

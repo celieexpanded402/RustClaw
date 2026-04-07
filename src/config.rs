@@ -20,6 +20,8 @@ pub struct AppConfig {
     pub email: EmailConfig,
     #[serde(default)]
     pub monitor: MonitorConfig,
+    #[serde(default)]
+    pub mcp: McpConfig,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -252,6 +254,20 @@ pub struct MonitorConfig {
     pub docker: bool,
     #[serde(default)]
     pub pm2: bool,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct McpConfig {
+    #[serde(default)]
+    pub servers: Vec<McpServerConfig>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct McpServerConfig {
+    pub name: String,
+    pub command: String,
+    #[serde(default)]
+    pub env: std::collections::HashMap<String, String>,
 }
 
 fn default_github_scan_cron() -> String {
