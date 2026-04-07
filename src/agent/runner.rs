@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc;
 use tracing::{debug, info, warn};
 
-use crate::config::{AgentConfig, ToolsConfig};
+use crate::config::{AgentConfig, EmailConfig, ToolsConfig};
 use crate::tools::executor::{self, DiscordHttp, ToolCall};
 
 const MAX_TOOL_ITERATIONS: usize = 10;
@@ -56,15 +56,16 @@ impl AgentRunner {
         history: &[Message],
         tools_config: &ToolsConfig,
         discord_http: &DiscordHttp,
+        email_config: &Option<EmailConfig>,
         mut on_token: impl FnMut(String) + Send,
     ) -> Result<String> {
         match self.config.provider.as_str() {
             "anthropic" => {
-                self.agentic_anthropic(input, history, tools_config, discord_http, &mut on_token)
+                self.agentic_anthropic(input, history, tools_config, discord_http, email_config, &mut on_token)
                     .await
             }
             "openai" => {
-                self.agentic_openai(input, history, tools_config, discord_http, &mut on_token)
+                self.agentic_openai(input, history, tools_config, discord_http, email_config, &mut on_token)
                     .await
             }
             other => bail!("unknown provider: {other}"),
@@ -79,6 +80,7 @@ impl AgentRunner {
         history: &[Message],
         tools_config: &ToolsConfig,
         discord_http: &DiscordHttp,
+        email_config: &Option<EmailConfig>,
         on_token: &mut (impl FnMut(String) + Send),
     ) -> Result<String> {
         let base = if self.config.base_url.is_empty() {
@@ -179,7 +181,7 @@ impl AgentRunner {
             for (id, name, arguments) in tool_uses {
                 info!(tool = %name, "Executing tool");
                 let call = ToolCall { name, arguments };
-                let result = executor::execute_tool(&call, &id, tools_config, discord_http).await;
+                let result = executor::execute_tool(&call, &id, tools_config, discord_http, email_config).await;
                 tool_results.push(serde_json::json!({
                     "type": "tool_result",
                     "tool_use_id": result.tool_use_id,
@@ -201,6 +203,7 @@ impl AgentRunner {
         history: &[Message],
         tools_config: &ToolsConfig,
         discord_http: &DiscordHttp,
+        email_config: &Option<EmailConfig>,
         on_token: &mut (impl FnMut(String) + Send),
     ) -> Result<String> {
         let base = if self.config.base_url.is_empty() {
@@ -309,7 +312,7 @@ impl AgentRunner {
 
                 info!(tool = %name, "Executing tool");
                 let call = ToolCall { name, arguments };
-                let result = executor::execute_tool(&call, &id, tools_config, discord_http).await;
+                let result = executor::execute_tool(&call, &id, tools_config, discord_http, email_config).await;
 
                 messages.push(serde_json::json!({
                     "role": "tool",

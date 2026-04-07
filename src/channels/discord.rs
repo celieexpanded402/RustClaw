@@ -10,7 +10,7 @@ use tokio::sync::mpsc;
 use tracing::{error, info, warn};
 
 use crate::agent::{AgentRunner, Message as AgentMessage};
-use crate::config::{DiscordConfig, ToolsConfig};
+use crate::config::{DiscordConfig, EmailConfig, ToolsConfig};
 use crate::cron::CronContext;
 use crate::session::store::SessionStore;
 use crate::tools::executor::DiscordHttp;
@@ -34,6 +34,7 @@ impl DiscordChannel {
         runner: Arc<AgentRunner>,
         cron_ctx: Option<Arc<CronContext>>,
         tools_config: ToolsConfig,
+        email_config: Option<EmailConfig>,
     ) -> Result<()> {
         if self.config.bot_token.is_empty() {
             anyhow::bail!("Discord bot_token is empty");
@@ -54,6 +55,7 @@ impl DiscordChannel {
             cron_ctx,
             tools_config,
             discord_http,
+            email_config,
         };
 
         let mut client = Client::builder(&handler.config.bot_token, intents)
@@ -74,6 +76,7 @@ struct Handler {
     cron_ctx: Option<Arc<CronContext>>,
     tools_config: ToolsConfig,
     discord_http: DiscordHttp,
+    email_config: Option<EmailConfig>,
 }
 
 #[async_trait]
@@ -159,13 +162,14 @@ impl EventHandler for Handler {
         let history_owned = history.clone();
         let tools_config = self.tools_config.clone();
         let discord_http = self.discord_http.clone();
+        let email_config = self.email_config.clone();
 
         tokio::spawn(async move {
             let r = AgentRunner::new(runner_config);
             let tx2 = tx.clone();
             if tools_config.enabled {
                 let result = r
-                    .run_agentic(&input_owned, &history_owned, &tools_config, &discord_http, move |token| {
+                    .run_agentic(&input_owned, &history_owned, &tools_config, &discord_http, &email_config, move |token| {
                         let _ = tx2.try_send(token);
                     })
                     .await;

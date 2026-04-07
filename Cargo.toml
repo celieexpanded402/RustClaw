@@ -25,6 +25,9 @@ serenity = { version = "0.12", default-features = false, features = ["client", "
 octocrab = "0.41"
 tokio-cron-scheduler = "0.11"
 rusqlite = { version = "0.31", features = ["bundled"] }
+imap = "2"
+native-tls = "0.2"
+lettre = "0.11"
 
 [profile.release]
 opt-level = "z"

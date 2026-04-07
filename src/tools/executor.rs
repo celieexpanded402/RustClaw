@@ -4,9 +4,9 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use tracing::info;
 
-use crate::config::ToolsConfig;
+use crate::config::{EmailConfig, ToolsConfig};
 
-use super::{discord as discord_tools, exec, fs, search};
+use super::{discord as discord_tools, email, exec, fs, search, system};
 
 #[derive(Debug, Deserialize)]
 pub struct ToolCall {
@@ -29,8 +29,9 @@ pub async fn execute_tool(
     tool_id: &str,
     config: &ToolsConfig,
     discord_http: &DiscordHttp,
+    email_config: &Option<EmailConfig>,
 ) -> ToolResult {
-    let content = match execute_inner(call, config, discord_http).await {
+    let content = match execute_inner(call, config, discord_http, email_config).await {
         Ok(c) => c,
         Err(e) => format!("Error: {e}"),
     };
@@ -47,6 +48,7 @@ async fn execute_inner(
     call: &ToolCall,
     config: &ToolsConfig,
     discord_http: &DiscordHttp,
+    email_config: &Option<EmailConfig>,
 ) -> Result<String> {
     let args = &call.arguments;
 
@@ -170,8 +172,64 @@ async fn execute_inner(
             discord_tools::ban_member(http, guild_id, user_id, reason).await
         }
 
+        // ── System monitoring tools ───────────────────────────────────
+        "process_list" => system::process_list().await,
+
+        "process_check" => {
+            let name = arg_str(args, "name")?;
+            system::process_check(&name).await
+        }
+
+        "docker_status" => system::docker_status().await,
+
+        "docker_inspect" => {
+            let container = arg_str(args, "container")?;
+            system::docker_inspect(&container).await
+        }
+
+        "pm2_status" => system::pm2_status().await,
+
+        "http_ping" => {
+            let url = arg_str(args, "url")?;
+            system::http_ping(&url).await
+        }
+
+        "system_stats" => system::system_stats().await,
+
+        // ── Email tools ──────────────────────────────────────────────
+        "fetch_inbox" => {
+            let cfg = require_email(email_config)?;
+            let count = args.get("count").and_then(|v| v.as_u64()).unwrap_or(10) as u32;
+            let emails = email::fetch_inbox(cfg, count).await?;
+            Ok(email::format_inbox_report(&emails))
+        }
+
+        "read_email" => {
+            let cfg = require_email(email_config)?;
+            let uid = arg_str(args, "uid")?;
+            let detail = email::read_email(cfg, &uid).await?;
+            Ok(format!(
+                "From: {}\nTo: {}\nSubject: {}\nDate: {}\n\n{}",
+                detail.from, detail.to, detail.subject, detail.date, detail.body
+            ))
+        }
+
+        "send_email" => {
+            let cfg = require_email(email_config)?;
+            let to = arg_str(args, "to")?;
+            let subject = arg_str(args, "subject")?;
+            let body = arg_str(args, "body")?;
+            email::send_email(cfg, &to, &subject, &body).await
+        }
+
         _ => Ok(format!("Unknown tool: {}", call.name)),
     }
+}
+
+fn require_email(config: &Option<EmailConfig>) -> Result<&EmailConfig> {
+    config
+        .as_ref()
+        .ok_or_else(|| anyhow::anyhow!("Email not configured"))
 }
 
 fn require_discord(http: &DiscordHttp) -> Result<&Arc<serenity::http::Http>> {
@@ -339,6 +397,95 @@ pub fn tool_definitions() -> serde_json::Value {
                     "reason": { "type": "string", "description": "Reason for ban (optional)" }
                 },
                 "required": ["guild_id", "user_id"]
+            }
+        },
+        // ── System monitoring tools
+        {
+            "name": "process_list",
+            "description": "List running processes sorted by memory usage",
+            "input_schema": { "type": "object", "properties": {} }
+        },
+        {
+            "name": "process_check",
+            "description": "Check if a specific process is running",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "name": { "type": "string", "description": "Process name to check" }
+                },
+                "required": ["name"]
+            }
+        },
+        {
+            "name": "docker_status",
+            "description": "List all Docker containers with their status",
+            "input_schema": { "type": "object", "properties": {} }
+        },
+        {
+            "name": "docker_inspect",
+            "description": "Inspect a specific Docker container's status",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "container": { "type": "string", "description": "Container name or ID" }
+                },
+                "required": ["container"]
+            }
+        },
+        {
+            "name": "pm2_status",
+            "description": "List all PM2 managed processes with status, CPU, memory",
+            "input_schema": { "type": "object", "properties": {} }
+        },
+        {
+            "name": "http_ping",
+            "description": "Check if an HTTP endpoint is reachable and return status code",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "url": { "type": "string", "description": "URL to ping" }
+                },
+                "required": ["url"]
+            }
+        },
+        {
+            "name": "system_stats",
+            "description": "Get system resource summary: uptime, disk, memory",
+            "input_schema": { "type": "object", "properties": {} }
+        },
+        // ── Email tools
+        {
+            "name": "fetch_inbox",
+            "description": "Fetch latest emails from inbox via IMAP",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "count": { "type": "integer", "description": "Number of emails to fetch (default 10)" }
+                }
+            }
+        },
+        {
+            "name": "read_email",
+            "description": "Read the full content of a specific email by UID",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "uid": { "type": "string", "description": "Email UID/sequence number" }
+                },
+                "required": ["uid"]
+            }
+        },
+        {
+            "name": "send_email",
+            "description": "Send an email via SMTP",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "to": { "type": "string", "description": "Recipient email address" },
+                    "subject": { "type": "string", "description": "Email subject" },
+                    "body": { "type": "string", "description": "Email body text" }
+                },
+                "required": ["to", "subject", "body"]
             }
         }
     ])

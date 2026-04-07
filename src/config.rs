@@ -16,6 +16,10 @@ pub struct AppConfig {
     pub cron: CronConfig,
     #[serde(default)]
     pub tools: ToolsConfig,
+    #[serde(default)]
+    pub email: EmailConfig,
+    #[serde(default)]
+    pub monitor: MonitorConfig,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -151,6 +155,10 @@ pub struct CronConfig {
     pub github_scan: String,
     #[serde(default)]
     pub auto_pr: bool,
+    #[serde(default = "default_system_check_cron")]
+    pub system_check: String,
+    #[serde(default = "default_email_scan_cron")]
+    pub email_scan: String,
 }
 
 impl Default for CronConfig {
@@ -158,8 +166,18 @@ impl Default for CronConfig {
         Self {
             github_scan: default_github_scan_cron(),
             auto_pr: false,
+            system_check: default_system_check_cron(),
+            email_scan: default_email_scan_cron(),
         }
     }
+}
+
+fn default_system_check_cron() -> String {
+    "0 */5 * * * *".to_string()
+}
+
+fn default_email_scan_cron() -> String {
+    "0 */15 * * * *".to_string()
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -191,6 +209,49 @@ fn default_workspace_dir() -> String {
 
 fn default_exec_timeout() -> u64 {
     30
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct EmailConfig {
+    #[serde(default)]
+    pub enabled: bool,
+    #[serde(default = "default_imap_host")]
+    pub imap_host: String,
+    #[serde(default = "default_imap_port")]
+    pub imap_port: u16,
+    #[serde(default = "default_smtp_host")]
+    pub smtp_host: String,
+    #[serde(default = "default_smtp_port")]
+    pub smtp_port: u16,
+    #[serde(default)]
+    pub username: String,
+    #[serde(default)]
+    pub password: String,
+}
+
+fn default_imap_host() -> String {
+    "imap.gmail.com".to_string()
+}
+fn default_imap_port() -> u16 {
+    993
+}
+fn default_smtp_host() -> String {
+    "smtp.gmail.com".to_string()
+}
+fn default_smtp_port() -> u16 {
+    587
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct MonitorConfig {
+    #[serde(default)]
+    pub services: Vec<String>,
+    #[serde(default)]
+    pub endpoints: Vec<String>,
+    #[serde(default)]
+    pub docker: bool,
+    #[serde(default)]
+    pub pm2: bool,
 }
 
 fn default_github_scan_cron() -> String {

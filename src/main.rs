@@ -96,8 +96,9 @@ async fn cmd_gateway(cfg: AppConfig) -> anyhow::Result<()> {
             None
         };
         let dc_tools = cfg.tools.clone();
+        let dc_email = if cfg.email.enabled { Some(cfg.email.clone()) } else { None };
         tokio::spawn(async move {
-            if let Err(e) = dc.start(dc_runner, dc_cron, dc_tools).await {
+            if let Err(e) = dc.start(dc_runner, dc_cron, dc_tools, dc_email).await {
                 tracing::error!(%e, "Discord channel exited with error");
             }
         });
@@ -127,8 +128,9 @@ async fn cmd_agent(cfg: AppConfig, message: &str, stream: bool) -> anyhow::Resul
         // Agentic mode with tool calling
         let mut stdout = std::io::stdout();
         let no_discord = None;
+        let email_cfg = if cfg.email.enabled { Some(cfg.email.clone()) } else { None };
         let result = runner
-            .run_agentic(message, &[], &tools_config, &no_discord, |token| {
+            .run_agentic(message, &[], &tools_config, &no_discord, &email_cfg, |token| {
                 let _ = write!(stdout, "{token}");
                 let _ = stdout.flush();
             })
