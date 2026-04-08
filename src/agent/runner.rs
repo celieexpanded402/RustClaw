@@ -11,6 +11,8 @@ use crate::tools::executor::{self, DiscordHttp, ToolCall};
 use crate::tools::mcp::McpManager;
 
 const MAX_TOOL_ITERATIONS: usize = 10;
+const MAX_HISTORY_MESSAGES: usize = 20;
+const COMPRESS_AFTER: usize = 10;
 
 // ── Public types ─────────────────────────────────────────────────────
 
@@ -36,10 +38,12 @@ pub struct AgentRunner {
 
 impl AgentRunner {
     pub fn new(config: AgentConfig) -> Self {
-        Self {
-            config,
-            client: Client::new(),
-        }
+        // 120s for agentic (tool calling needs more think time)
+        let client = Client::builder()
+            .timeout(std::time::Duration::from_secs(120))
+            .build()
+            .unwrap_or_else(|_| Client::new());
+        Self { config, client }
     }
 
     pub fn config(&self) -> &AgentConfig {
@@ -101,8 +105,9 @@ impl AgentRunner {
             &self.config.model
         };
 
-        let mut messages: Vec<serde_json::Value> = Vec::with_capacity(history.len() + 1);
-        for msg in history {
+        let compressed = compress_history(history);
+        let mut messages: Vec<serde_json::Value> = Vec::with_capacity(compressed.len() + 1);
+        for msg in &compressed {
             messages.push(serde_json::json!({ "role": msg.role, "content": msg.content }));
         }
         messages.push(serde_json::json!({ "role": "user", "content": input }));
@@ -123,7 +128,7 @@ impl AgentRunner {
                 body["system"] = serde_json::json!(self.config.system_prompt);
             }
 
-            let resp = self
+            let resp = match self
                 .client
                 .post(&url)
                 .header("x-api-key", &self.config.api_key)
@@ -132,7 +137,16 @@ impl AgentRunner {
                 .body(serde_json::to_string(&body)?)
                 .send()
                 .await
-                .context("Anthropic request failed")?;
+            {
+                Ok(r) => r,
+                Err(e) => {
+                    if e.is_timeout() {
+                        warn!("LLM call timed out at iteration {iteration}, returning partial result");
+                        break;
+                    }
+                    return Err(anyhow::anyhow!("Anthropic request failed: {e}"));
+                }
+            };
 
             if !resp.status().is_success() {
                 let status = resp.status();
@@ -222,6 +236,7 @@ impl AgentRunner {
             &self.config.model
         };
 
+        let compressed = compress_history(history);
         let mut messages: Vec<serde_json::Value> = Vec::new();
         if !self.config.system_prompt.is_empty() {
             messages.push(serde_json::json!({
@@ -229,7 +244,7 @@ impl AgentRunner {
                 "content": self.config.system_prompt,
             }));
         }
-        for msg in history {
+        for msg in &compressed {
             messages.push(serde_json::json!({ "role": msg.role, "content": msg.content }));
         }
         messages.push(serde_json::json!({ "role": "user", "content": input }));
@@ -255,11 +270,20 @@ impl AgentRunner {
                 req = req.header("authorization", format!("Bearer {}", self.config.api_key));
             }
 
-            let resp = req
+            let resp = match req
                 .body(serde_json::to_string(&body)?)
                 .send()
                 .await
-                .context("OpenAI request failed")?;
+            {
+                Ok(r) => r,
+                Err(e) => {
+                    if e.is_timeout() {
+                        warn!("LLM call timed out at iteration {iteration}, returning partial result");
+                        break;
+                    }
+                    return Err(e.into());
+                }
+            };
 
             if !resp.status().is_success() {
                 let status = resp.status();
@@ -565,6 +589,57 @@ fn extract_openai_delta(v: &serde_json::Value) -> Option<String> {
 }
 
 /// Convert tool definitions to OpenAI function calling format.
+/// Compress history: keep last N messages, summarize older ones into a single message.
+fn compress_history(history: &[Message]) -> Vec<Message> {
+    if history.len() <= COMPRESS_AFTER {
+        return history.to_vec();
+    }
+
+    let split = history.len() - COMPRESS_AFTER;
+    let old = &history[..split];
+    let recent = &history[split..];
+
+    // Summarize old messages into one
+    let summary = old
+        .iter()
+        .map(|m| format!("{}: {}", m.role, truncate_msg(&m.content, 100)))
+        .collect::<Vec<_>>()
+        .join("\n");
+
+    let mut compressed = vec![Message {
+        role: "system".to_string(),
+        content: format!("[Earlier conversation summary ({} messages)]\n{}", old.len(), summary),
+    }];
+    compressed.extend_from_slice(recent);
+    compressed
+}
+
+/// Load workspace context from CLAUDE.md or README.md if present.
+fn load_workspace_context(workspace_dir: &str) -> Option<String> {
+    for name in ["CLAUDE.md", "README.md"] {
+        let path = std::path::Path::new(workspace_dir).join(name);
+        if path.exists() {
+            if let Ok(content) = std::fs::read_to_string(&path) {
+                let truncated = if content.len() > 1000 {
+                    format!("{}...", &content[..1000])
+                } else {
+                    content
+                };
+                return Some(format!("[Project context from {name}]\n{truncated}"));
+            }
+        }
+    }
+    None
+}
+
+fn truncate_msg(s: &str, max: usize) -> String {
+    if s.len() <= max {
+        s.to_string()
+    } else {
+        format!("{}...", &s[..max])
+    }
+}
+
 fn openai_tool_definitions(mcp: &Option<Arc<McpManager>>) -> serde_json::Value {
     let anthropic_tools = executor::all_tool_definitions(mcp);
     let tools: Vec<serde_json::Value> = anthropic_tools

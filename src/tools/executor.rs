@@ -48,8 +48,10 @@ pub async fn execute_tool(
     }
 
     let content = match execute_inner(call, config, discord_http, email_config).await {
-        Ok(c) => c,
-        Err(e) => format!("Error: {e}"),
+        Ok(c) => truncate_result(&c),
+        Err(e) => format!(
+            "Error: {e}\n\nHint: The tool failed. Try a different approach or use another tool to investigate the issue first."
+        ),
     };
 
     info!(tool = %call.name, "Tool executed");
@@ -59,6 +61,29 @@ pub async fn execute_tool(
         content,
     }
 }
+
+const MAX_RESULT_CHARS: usize = 4000;
+
+/// Truncate tool output to avoid flooding the LLM context.
+fn truncate_result(s: &str) -> String {
+    if s.len() <= MAX_RESULT_CHARS {
+        return s.to_string();
+    }
+    let lines: Vec<&str> = s.lines().collect();
+    let truncated = &s[..MAX_RESULT_CHARS];
+    format!(
+        "{truncated}\n\n... (truncated, showing {MAX_RESULT_CHARS}/{} chars, {}/{} lines)",
+        s.len(),
+        truncated.lines().count(),
+        lines.len()
+    )
+}
+
+const DANGEROUS_PATTERNS: &[&str] = &[
+    "rm -rf /", "rm -rf /*", "mkfs", "dd if=", "> /dev/sd",
+    "chmod -R 777 /", ":(){ :|:& };:", "shutdown", "reboot",
+    "init 0", "init 6", "kill -9 1", "DROP DATABASE", "DROP TABLE",
+];
 
 async fn execute_inner(
     call: &ToolCall,
@@ -95,8 +120,19 @@ async fn execute_inner(
             let path = arg_str(args, "path")?;
             let old = arg_str(args, "old")?;
             let new = arg_str(args, "new")?;
+            // Safety: verify the old string exists before patching
+            let content = fs::read_file(&path)?;
+            if !content.contains(&old) {
+                anyhow::bail!(
+                    "patch_file: pattern not found in {path}. File has {} lines. Use read_file first to check content.",
+                    content.lines().count()
+                );
+            }
             fs::patch_file(&path, &old, &new)?;
-            Ok(format!("Patched {path}"))
+            Ok(format!("Patched {path}: replaced '{}' → '{}'",
+                if old.len() > 50 { format!("{}...", &old[..50]) } else { old },
+                if new.len() > 50 { format!("{}...", &new[..50]) } else { new },
+            ))
         }
 
         // ── Shell execution ──────────────────────────────────────────
@@ -105,6 +141,13 @@ async fn execute_inner(
                 anyhow::bail!("Command execution is disabled in config");
             }
             let cmd = arg_str(args, "cmd")?;
+            // Block dangerous commands
+            let cmd_lower = cmd.to_lowercase();
+            for pattern in DANGEROUS_PATTERNS {
+                if cmd_lower.contains(pattern) {
+                    anyhow::bail!("Blocked dangerous command: {cmd}");
+                }
+            }
             let cwd = args
                 .get("cwd")
                 .and_then(|v| v.as_str())
