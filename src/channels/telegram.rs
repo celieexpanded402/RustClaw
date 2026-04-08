@@ -9,19 +9,19 @@ use tracing::{error, info, warn};
 
 use crate::agent::{AgentRunner, Message as AgentMessage};
 use crate::config::TelegramConfig;
-use crate::session::store::SessionStore;
+use crate::session::memory::MemoryManager;
 
 const MAX_RETRIES: u32 = 3;
 const EDIT_INTERVAL: Duration = Duration::from_millis(800);
 
 pub struct TelegramChannel {
     config: TelegramConfig,
-    sessions: SessionStore,
+    memory: MemoryManager,
 }
 
 impl TelegramChannel {
-    pub fn new(config: TelegramConfig, sessions: SessionStore) -> Self {
-        Self { config, sessions }
+    pub fn new(config: TelegramConfig, memory: MemoryManager) -> Self {
+        Self { config, memory }
     }
 
     pub async fn start(self, runner: Arc<AgentRunner>) -> Result<()> {
@@ -46,14 +46,14 @@ impl TelegramChannel {
         info!("Starting Telegram bot (long polling)");
 
         let config = Arc::new(self.config);
-        let sessions = self.sessions;
+        let memory = self.memory;
 
         let handler = Update::filter_message()
             .filter(|msg: teloxide::types::Message| msg.text().is_some())
             .endpoint(handle_message);
 
         Dispatcher::builder(bot, handler)
-            .dependencies(dptree::deps![runner, sessions, config])
+            .dependencies(dptree::deps![runner, memory, config])
             .default_handler(|_upd| async {})
             .error_handler(LoggingErrorHandler::with_custom_text(
                 "Telegram dispatcher error",
@@ -70,7 +70,7 @@ async fn handle_message(
     bot: Bot,
     msg: teloxide::types::Message,
     runner: Arc<AgentRunner>,
-    sessions: SessionStore,
+    memory: MemoryManager,
     config: Arc<TelegramConfig>,
 ) -> ResponseResult<()> {
     let text = match msg.text() {
@@ -93,9 +93,9 @@ async fn handle_message(
     }
 
     let session_id = format!("telegram:{}", chat_id);
-    sessions.get_or_create(&session_id).await;
+    memory.get_or_create(&session_id).await;
 
-    let history = sessions.get_history(&session_id).await;
+    let history = memory.get_history(&session_id).await;
 
     // Build system prompt with current time
     let now = chrono::Local::now().format("%Y-%m-%d %H:%M:%S %Z");
@@ -109,7 +109,7 @@ async fn handle_message(
     };
 
     // Record user message
-    sessions
+    memory
         .push_message(
             &session_id,
             AgentMessage {
@@ -120,9 +120,9 @@ async fn handle_message(
         .await;
 
     if config.stream_edit {
-        stream_with_edit(&bot, chat_id, &runner, &input_with_context, &history, &sessions, &session_id).await?;
+        stream_with_edit(&bot, chat_id, &runner, &input_with_context, &history, &memory, &session_id).await?;
     } else {
-        send_oneshot(&bot, chat_id, &runner, &input_with_context, &history, &sessions, &session_id).await?;
+        send_oneshot(&bot, chat_id, &runner, &input_with_context, &history, &memory, &session_id).await?;
     }
 
     Ok(())
@@ -135,7 +135,7 @@ async fn stream_with_edit(
     runner: &AgentRunner,
     input: &str,
     history: &[AgentMessage],
-    sessions: &SessionStore,
+    memory: &MemoryManager,
     session_id: &str,
 ) -> ResponseResult<()> {
     // Send initial placeholder
@@ -190,7 +190,7 @@ async fn stream_with_edit(
     retry_edit(bot, chat_id, msg_id, &full).await;
 
     // Record assistant message
-    sessions
+    memory
         .push_message(
             session_id,
             AgentMessage {
@@ -210,7 +210,7 @@ async fn send_oneshot(
     runner: &AgentRunner,
     input: &str,
     history: &[AgentMessage],
-    sessions: &SessionStore,
+    memory: &MemoryManager,
     session_id: &str,
 ) -> ResponseResult<()> {
     let result = runner
@@ -228,7 +228,7 @@ async fn send_oneshot(
 
     retry_send(bot, chat_id, &response).await?;
 
-    sessions
+    memory
         .push_message(
             session_id,
             AgentMessage {

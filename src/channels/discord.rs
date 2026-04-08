@@ -13,7 +13,7 @@ use crate::agent::runner::ToolContext;
 use crate::agent::{AgentRunner, Message as AgentMessage};
 use crate::config::{DiscordConfig, EmailConfig, ToolsConfig};
 use crate::cron::CronContext;
-use crate::session::store::SessionStore;
+use crate::session::memory::MemoryManager;
 use crate::tools::executor::DiscordHttp;
 use crate::tools::mcp::McpManager;
 
@@ -23,12 +23,12 @@ const MAX_MSG_LEN: usize = 2000;
 
 pub struct DiscordChannel {
     config: DiscordConfig,
-    sessions: SessionStore,
+    memory: MemoryManager,
 }
 
 impl DiscordChannel {
-    pub fn new(config: DiscordConfig, sessions: SessionStore) -> Self {
-        Self { config, sessions }
+    pub fn new(config: DiscordConfig, memory: MemoryManager) -> Self {
+        Self { config, memory }
     }
 
     pub async fn start(
@@ -53,7 +53,7 @@ impl DiscordChannel {
 
         let handler = Handler {
             runner,
-            sessions: self.sessions,
+            memory: self.memory,
             config: Arc::new(self.config),
             cron_ctx,
             tools_config,
@@ -75,7 +75,7 @@ impl DiscordChannel {
 
 struct Handler {
     runner: Arc<AgentRunner>,
-    sessions: SessionStore,
+    memory: MemoryManager,
     config: Arc<DiscordConfig>,
     cron_ctx: Option<Arc<CronContext>>,
     tools_config: ToolsConfig,
@@ -131,8 +131,8 @@ impl EventHandler for Handler {
         let user_id = msg.author.id;
         let session_id = format!("discord:{}:{}", channel_id, user_id);
 
-        self.sessions.get_or_create(&session_id).await;
-        let history = self.sessions.get_history(&session_id).await;
+        self.memory.get_or_create(&session_id).await;
+        let history = self.memory.get_history(&session_id).await;
 
         let now = chrono::Local::now().format("%Y-%m-%d %H:%M:%S %Z");
         let input = if history.is_empty() {
@@ -141,7 +141,7 @@ impl EventHandler for Handler {
             trimmed.to_string()
         };
 
-        self.sessions
+        self.memory
             .push_message(
                 &session_id,
                 AgentMessage {
@@ -223,7 +223,7 @@ impl EventHandler for Handler {
         let final_text = truncate_for_discord(&full);
         retry_edit(&ctx, &placeholder, &final_text).await;
 
-        self.sessions
+        self.memory
             .push_message(
                 &session_id,
                 AgentMessage {

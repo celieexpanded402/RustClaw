@@ -65,7 +65,7 @@ pub async fn handle(mut socket: WebSocket, state: Arc<AppState>) {
     info!(%peer, "Handshake complete");
 
     // Create a session for this connection
-    let session_id = state.sessions.create().await;
+    let session_id = state.memory.create().await;
 
     // ── Phase 5: Request / response loop ─────────────────────────────
     while let Some(frame) = read_frame(&mut socket).await {
@@ -133,17 +133,17 @@ async fn handle_agent(
     send(socket, OutboundFrame::agent_ack(&req.id, &run_id)).await;
 
     // Get session history and stream response
-    let history = state.sessions.get_history(session_id).await;
+    let history = state.memory.get_history(session_id).await;
     let mut rx = state.agent.chat_stream(&params.input, &history).await;
 
     // Record user message
     state
-        .sessions
+        .memory
         .push_message(
             session_id,
             agent::Message {
                 role: "user".to_string(),
-                content: params.input,
+                content: params.input.clone(),
             },
         )
         .await;
@@ -156,15 +156,18 @@ async fn handle_agent(
 
     // Record assistant response
     state
-        .sessions
+        .memory
         .push_message(
             session_id,
             agent::Message {
                 role: "assistant".to_string(),
-                content: full_response,
+                content: full_response.clone(),
             },
         )
         .await;
+
+    // Extract long-term memories from this exchange
+    state.memory.learn(session_id, &params.input, &full_response).await;
 
     // Done
     send(socket, OutboundFrame::agent_event_done(&run_id)).await;

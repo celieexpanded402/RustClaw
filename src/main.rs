@@ -19,6 +19,8 @@ use crate::channels::telegram::TelegramChannel;
 use crate::cli::{Cli, Command, GithubCommand};
 use crate::config::AppConfig;
 use crate::cron::CronContext;
+use crate::session::graph::GraphStore;
+use crate::session::memory::MemoryManager;
 use crate::session::store::SessionStore;
 use crate::tools::github::GitHubClient;
 use crate::tools::mcp::McpManager;
@@ -47,7 +49,9 @@ async fn cmd_gateway(cfg: AppConfig) -> anyhow::Result<()> {
 
     let db_path = resolve_db_path();
     let sessions = SessionStore::open(&db_path)?;
-    info!("Session store: {db_path}");
+    let graph = GraphStore::open(&db_path)?;
+    let memory = MemoryManager::new(sessions, graph, cfg.agent.clone());
+    info!("Session store: {db_path} (with long-term memory + graph)");
     let runner = Arc::new(AgentRunner::new(cfg.agent.clone()));
 
     // MCP servers
@@ -109,7 +113,7 @@ async fn cmd_gateway(cfg: AppConfig) -> anyhow::Result<()> {
     // Telegram
     if cfg.channels.telegram.enabled {
         info!("Starting Telegram channel");
-        let tg = TelegramChannel::new(cfg.channels.telegram.clone(), sessions.clone());
+        let tg = TelegramChannel::new(cfg.channels.telegram.clone(), memory.clone());
         let tg_runner = Arc::clone(&runner);
         tokio::spawn(async move {
             if let Err(e) = tg.start(tg_runner).await {
@@ -121,7 +125,7 @@ async fn cmd_gateway(cfg: AppConfig) -> anyhow::Result<()> {
     // Discord
     if cfg.channels.discord.enabled {
         info!("Starting Discord channel");
-        let dc = DiscordChannel::new(cfg.channels.discord.clone(), sessions.clone());
+        let dc = DiscordChannel::new(cfg.channels.discord.clone(), memory.clone());
         let dc_runner = Arc::clone(&runner);
         let dc_cron = if cron_ctx.github.is_some() {
             Some(Arc::clone(&cron_ctx))
@@ -156,7 +160,7 @@ async fn cmd_gateway(cfg: AppConfig) -> anyhow::Result<()> {
         });
     }
 
-    gateway::server::run_with_sessions(cfg, sessions).await
+    gateway::server::run_with_memory(cfg, memory).await
 }
 
 // ── Agent ────────────────────────────────────────────────────────────

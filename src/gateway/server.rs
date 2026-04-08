@@ -10,7 +10,7 @@ use tracing::info;
 
 use crate::agent::AgentRunner;
 use crate::config::AppConfig;
-use crate::session::store::SessionStore;
+use crate::session::memory::MemoryManager;
 
 use super::connection;
 
@@ -18,7 +18,7 @@ use super::connection;
 pub struct AppState {
     pub config: AppConfig,
     pub agent: AgentRunner,
-    pub sessions: SessionStore,
+    pub memory: MemoryManager,
 }
 
 async fn ws_handler(
@@ -32,15 +32,14 @@ async fn health() -> &'static str {
     "ok"
 }
 
-/// Start the gateway server with a pre-existing session store (shared with channels).
-pub async fn run_with_sessions(config: AppConfig, sessions: SessionStore) -> anyhow::Result<()> {
+pub async fn run_with_memory(config: AppConfig, memory: MemoryManager) -> anyhow::Result<()> {
     let listen = config.gateway.listen_addr();
     let agent = AgentRunner::new(config.agent.clone());
 
     let state = Arc::new(AppState {
         config,
         agent,
-        sessions,
+        memory,
     });
 
     let app = Router::new()
