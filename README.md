@@ -340,4 +340,4 @@ Community contributions welcome. Open an issue or PR.
 
 ## License
 
-MIT
+Apache-2.0
