@@ -614,19 +614,17 @@ fn compress_history(history: &[Message]) -> Vec<Message> {
     compressed
 }
 
-/// Load workspace context from CLAUDE.md or README.md if present.
+/// Load workspace context from README.md if present.
 fn load_workspace_context(workspace_dir: &str) -> Option<String> {
-    for name in ["CLAUDE.md", "README.md"] {
-        let path = std::path::Path::new(workspace_dir).join(name);
-        if path.exists() {
-            if let Ok(content) = std::fs::read_to_string(&path) {
-                let truncated = if content.len() > 1000 {
-                    format!("{}...", &content[..1000])
-                } else {
-                    content
-                };
-                return Some(format!("[Project context from {name}]\n{truncated}"));
-            }
+    let path = std::path::Path::new(workspace_dir).join("README.md");
+    if path.exists() {
+        if let Ok(content) = std::fs::read_to_string(&path) {
+            let truncated = if content.len() > 1000 {
+                format!("{}...", &content[..1000])
+            } else {
+                content
+            };
+            return Some(format!("[Project context from README.md]\n{truncated}"));
         }
     }
     None
