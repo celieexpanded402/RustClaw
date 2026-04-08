@@ -28,6 +28,7 @@ rusqlite = { version = "0.31", features = ["bundled"] }
 imap = "2"
 native-tls = "0.2"
 lettre = "0.11"
+criterion = "0.8.2"
 
 [profile.release]
 opt-level = "z"
