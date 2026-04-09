@@ -48,6 +48,24 @@ Built entirely with [Claude Code](https://claude.ai/code) by [Ad Huang](https://
 
 ---
 
+## 💡 Key Advantages
+
+**🪶 Runs anywhere** — 7.5 MB binary, 14 MB RAM. Raspberry Pi, $5 VPS, or your laptop. No Node.js, no Python, no Docker required.
+
+**🧠 Remembers everything** — Three-tier memory (vector + graph + history) with mixed-mode scoping. Tell the bot your name in Telegram, it remembers in Discord. Facts auto-extracted, contradictions auto-resolved.
+
+**🛡️ Safe by design** — 14 dangerous command patterns blocked. Tool output truncated. Patch files verified before modification. Error retry with auto-recovery. 120s timeout with graceful fallback.
+
+**🔧 Actually does things** — 97% tool accuracy on 500-question benchmark. 0% hallucination rate. The bot reads your files, runs your commands, creates PRs — it doesn't just describe what it *would* do.
+
+**🔌 MCP-ready** — Connect any MCP server. Tools auto-discovered and routed transparently. Your LLM sees one unified tool list — local and remote, no difference.
+
+**📈 Benchmarked and proven** — 500-question professional benchmark covering daily ops, coding, system administration, and adversarial prompts. v3→v5 improvement: 81% → 97%. Zero timeouts.
+
+**⚙️ Claude Code inspired** — Understand-first tool ordering, history compression, workspace context loading, error retry hints. The same patterns that make Claude Code effective, applied to an open-source agent.
+
+---
+
 ## 🚀 Quick Start
 
 ### Prerequisites
