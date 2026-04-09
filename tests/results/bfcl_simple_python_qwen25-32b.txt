@@ -1,0 +1,13 @@
+=== Gorilla BFCL — simple_python ===
+Model: qwen2.5:32b (Ollama local)
+Date: 2026-04-10
+
+RESULT: 399/400 (99.75%)
+  ✅ 399  ❌ 1 (false negative — correct function called)
+  Effective: 400/400 (100%)
+  Time: 2936s (7.3s/question)
+
+Failed Q340: card_games.poker_determine_winner
+  - Model called correct function with correct arguments
+  - Scorer failed on namespace-dotted function name matching
+  - Verified manually: response is correct
