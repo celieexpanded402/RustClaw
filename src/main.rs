@@ -19,7 +19,6 @@ use crate::channels::telegram::TelegramChannel;
 use crate::cli::{Cli, Command, GithubCommand};
 use crate::config::AppConfig;
 use crate::cron::CronContext;
-use crate::session::graph::GraphStore;
 use crate::session::memory::MemoryManager;
 use crate::session::store::SessionStore;
 use crate::tools::github::GitHubClient;
@@ -49,9 +48,8 @@ async fn cmd_gateway(cfg: AppConfig) -> anyhow::Result<()> {
 
     let db_path = resolve_db_path();
     let sessions = SessionStore::open(&db_path)?;
-    let graph = GraphStore::open(&db_path)?;
-    let memory = MemoryManager::new(sessions, graph, cfg.agent.clone());
-    info!("Session store: {db_path} (with long-term memory + graph)");
+    let memory = MemoryManager::new(sessions, &db_path, &cfg.agent).await?;
+    info!("Session store: {db_path} (with R-Mem long-term memory)");
     let runner = Arc::new(AgentRunner::new(cfg.agent.clone()));
 
     // MCP servers
