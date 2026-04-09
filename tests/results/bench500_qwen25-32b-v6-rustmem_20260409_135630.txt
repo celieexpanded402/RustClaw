@@ -1,0 +1,13 @@
+=== RustClaw 500-Q Benchmark ===
+Model: qwen25-32b-v6-rustmem | 2026年 4月 9日 星期四 13時56分30秒 CST
+
+Q1 [A-Daily] ✅ (473c) 列出目前目錄有哪些檔案
+Q2 [A-Daily] ✅ (205c) 幫我讀一下 Cargo.toml
+Q3 [A-Daily] ✅ (42c) 建立一個 test.txt，內容寫 hello world
+Q4 [A-Daily] ✅ (209c) 幫我看一下系統記憶體和磁碟空間
+Q5 [A-Daily] ✅ (223c) Docker 有在跑嗎？
+Q6 [A-Daily] ✅ (305c) ollama 有在跑嗎？
+Q7 [A-Daily] ✅ (248c) PM2 上面有哪些服務？
+Q8 [A-Daily] ✅ (50c) 幫我 ping 一下 https://google.com 看通不通
+Q9 [A-Daily] ✅ (160c) 目前有哪些 process 在跑？
+Q10 [A-Daily] ✅ (124c) 幫我看一下信箱有沒有新信
