@@ -1,7 +1,0 @@
-=== RustClaw 500-Q Benchmark ===
-Model: qwen25-32b-v6-rustmem | 2026年 4月 9日 星期四 13時51分11秒 CST
-
-Q1 [A-Daily] ✅ (480c) 列出目前目錄有哪些檔案
-Q2 [A-Daily] ✅ (189c) 幫我讀一下 Cargo.toml
-Q3 [A-Daily] ✅ (32c) 建立一個 test.txt，內容寫 hello world
-Q4 [A-Daily] ✅ (182c) 幫我看一下系統記憶體和磁碟空間
