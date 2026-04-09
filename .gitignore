@@ -1,8 +1,15 @@
-*.log/target
+/target
 *.swp
 *.swo
+*.log
 .DS_Store
 .env
 config.toml
+sessions.db
+sessions.db-shm
+sessions.db-wal
 greet.py
 ~/dcws/
+node_modules/
+*.tar.gz
+*.pyc

@@ -1,0 +1,140 @@
+=== RustClaw 365-Q Professional Benchmark ===
+Model: qwen25-32b-v5-pro | 2026年 4月 9日 星期四 10時50分02秒 CST
+
+Q1 [A-Core] ✅ (585c) 列出專案根目錄結構，告訴我有幾個 Rust source file
+Q2 [A-Core] ✅ (716c) 讀 Cargo.toml，列出所有 dependencies 的名稱和版本
+Q3 [A-Core] ✅ (421c) 建立 tmp/test.txt 寫入當前系統時間，然後讀回來確認
+Q4 [A-Core] ✅ (304c) 查看系統 CPU、記憶體、磁碟使用率，判斷是否健康
+Q5 [A-Core] ✅ (315c) 列出所有 Docker container 的狀態和 port mapping
+Q6 [A-Core] ✅ (67c) 檢查 ollama、redis、postgres 三個服務哪些在跑哪些沒有
+Q7 [A-Core] ✅ (170c) PM2 上有哪些服務，哪個 CPU 最高，哪個重啟次數最多
+Q8 [A-Core] ✅ (107c) Ping google.com、github.com、localhost:18789 告訴我哪個不通
+Q9 [A-Core] ✅ (478c) 列出前 10 個最耗記憶體的 process
+Q10 [A-Core] ✅ (91c) 檢查信箱最新 5 封信，標題有沒有包含 urgent 或 important
+Q11 [A-Core] ✅ (637c) 讀 Dockerfile 和 config.example.toml，比較部署設定是否一致
+Q12 [A-Core] ✅ (232c) 找出 src/ 底下最大的 3 個 .rs 檔案和最小的 3 個
+Q13 [A-Core] ✅ (94c) 查看 git log 最近 10 筆 commit，統計每個 author 的 commit 數
+Q14 [A-Core] ✅ (153c) 讀 README.md 找出所有外部連結是否還有效（ping 每個 URL）
+Q15 [A-Core] ✅ (217c) 檢查 sessions.db 的大小和最後修改時間
+Q16 [A-Core] ✅ (869c) 列出所有 .toml 和 .json 設定檔，比較哪些有範例檔哪些沒有
+Q17 [A-Core] ✅ (482c) 查看系統所有監聽的 port，哪些是我們的服務
+Q18 [A-Core] ✅ (314c) 檢查 git status，有沒有未 commit 的修改
+Q19 [A-Core] ✅ (101c) 讀 .gitignore 確認 sessions.db 和 .env 有沒有被排除
+Q20 [A-Core] ❌ (0c) 列出 target/release/ 底下的 binary 大小和 build 時間
+Q21 [B-Tools] ❌ (0c) 在 src/tools/ 底下找到所有包含 "async fn" 的函式名稱
+Q22 [B-Tools] ❌ (0c) 把 Cargo.toml 的 version 從目前版本 bump 到下一個 patch version
+Q23 [B-Tools] ❌ (9c) 找出 config.rs 裡所有 default 函式，列出它們的回傳值
+Q24 [B-Tools] ✅ (230c) 執行 cargo clippy 把 warning 數量告訴我
+Q25 [B-Tools] ✅ (501c) 找出哪些 .rs 檔案超過 200 行，建議哪些應該拆分
+Q26 [B-Tools] ✅ (348c) 把 README.md 裡所有的 "RustClaw" 出現次數統計一下
+Q27 [B-Tools] ✅ (255c) 建立 scripts/healthcheck.sh 內容是 curl health endpoint 然後判斷回傳
+Q28 [B-Tools] ✅ (473c) 找出 src/ 裡所有 use crate:: 的 import，看有沒有循環依賴的跡象
+Q29 [B-Tools] ✅ (295c) 執行 git diff HEAD~3 摘要最近三次 commit 改了什麼
+Q30 [B-Tools] ✅ (821c) 找出所有 #[derive(Clone)] 的 struct，看哪些真的需要 Clone
+Q31 [B-Tools] ✅ (77c) 把 src/session/memory.rs 裡的 GLOBAL_SCOPE 常數值改成 "global:main"
+Q32 [B-Tools] ✅ (289c) 執行 cargo build --release 然後比較 binary 大小跟上次的差異
+Q33 [B-Tools] ✅ (426c) 找出所有 unwrap() 呼叫，統計哪個檔案用最多
+Q34 [B-Tools] ✅ (80c) 建立 tests/fixtures/ 資料夾，裡面放一個 sample_config.toml
+Q35 [B-Tools] ✅ (300c) 找出 executor.rs 裡有幾個 tool 定義，列出名稱
+Q36 [B-Tools] ✅ (250c) 執行 du -sh src/* 看哪個模組目錄最大
+Q37 [B-Tools] ✅ (324c) 在 graph.rs 裡找到 is_multi_value 函式，列出所有被認為是多值的關係
+Q38 [B-Tools] ✅ (59c) 把 .gitignore 加上 *.log 和 tmp/ 兩行
+Q39 [B-Tools] ✅ (180c) 找出所有 pub async fn 並統計同步 vs 異步函式的比例
+Q40 [B-Tools] ✅ (215c) 執行 cargo test 看有幾個 test，幾個 pass 幾個 ignore
+Q41 [B-Tools] ✅ (449c) Search for all TODO, FIXME, HACK comments and create a summary
+Q42 [B-Tools] ✅ (1032c) Find the function with the most parameters in the entire project
+Q43 [B-Tools] ✅ (165c) Create a scripts/backup.sh that dumps sessions.db with timestamp
+Q44 [B-Tools] ✅ (667c) Find all error messages that are hardcoded strings (not from config)
+Q45 [B-Tools] ✅ (243c) Run git log --shortstat and calculate total lines added vs deleted
+Q46 [B-Tools] ✅ (684c) Find all places where we create a new reqwest::Client (should be shared)
+Q47 [B-Tools] ✅ (1269c) Check if all SQL queries use parameterized inputs (no string concat)
+Q48 [B-Tools] ✅ (200c) Create a .env.example listing all supported environment variables
+Q49 [B-Tools] ✅ (1026c) Find all timeout values in the codebase and list them
+Q50 [B-Tools] ✅ (1605c) Compare the struct fields in TelegramConfig vs DiscordConfig
+--- Progress: 50/365 | Pass: 46 | Fail: 4 | Elapsed: 2279s ---
+Q51 [B-Tools] ✅ (385c) 找出所有 match 語句裡有 _ => 的 catch-all，看是否有遺漏的 case
+Q52 [B-Tools] ✅ (604c) 執行 cargo tree --duplicates 看有沒有重複的 crate 版本
+Q53 [B-Tools] ✅ (226c) 建立 docs/API.md 從 server.rs 的路由自動產生 API 文檔
+Q54 [B-Tools] ✅ (548c) 找出所有 .await 後面沒有 ? 的地方（可能吞掉了 error）
+Q55 [B-Tools] ✅ (1456c) 統計每個 tool 的 JSON schema 定義佔幾行，找出最肥的
+Q56 [C-Medium] ✅ (384c) 分析 runner.rs 的 agentic_openai 和 agentic_anthropic 有多少行重複，建議重構方案
+Q57 [C-Medium] ✅ (651c) 讀取 Cargo.lock 分析我們間接依賴了多少個 crate，找出依賴鏈最深的
+Q58 [C-Medium] ✅ (399c) 幫我寫一個 CI workflow (.github/workflows/ci.yml) 跑 build + clippy + test
+Q59 [C-Medium] ✅ (180c) 比較 src/session/store.rs 的 memories table 和 R-Mem 專案的 store.rs 有什麼差異
+Q60 [C-Medium] ✅ (619c) 檢查所有 Discord 和 Telegram 的 error handling 是否一致
+Q61 [C-Medium] ✅ (259c) 幫我寫一個 docker-compose.yml 包含 rustclaw + redis + postgres
+Q62 [C-Medium] ✅ (256c) 分析 embed.rs 的 cosine_similarity 在 10 萬條記憶下的預估效能
+Q63 [C-Medium] ✅ (469c) 讀取 cron/mod.rs 驗證所有 cron expression 是否合法
+Q64 [C-Medium] ✅ (207c) 幫我寫一個 migration script 在 sessions.db 加一個 metadata 欄位
+Q65 [C-Medium] ✅ (505c) 分析 system prompt 的 token 數量，建議如何精簡到一半
+Q66 [C-Medium] ✅ (445c) 找出 gateway/connection.rs 的 WebSocket handshake 有沒有安全隱患
+Q67 [C-Medium] ✅ (327c) 幫我產生 CHANGELOG.md 從 git log 自動分類 feat/fix/docs
+Q68 [C-Medium] ✅ (576c) 分析 mixed-mode memory 的三個 scope 搜尋是串行還是並行，建議改善
+Q69 [C-Medium] ✅ (614c) 幫我寫一個 benchmark.rs 用 criterion 測量 cosine_similarity 效能
+Q70 [C-Medium] ✅ (512c) 檢查所有 config 的 default 值是否合理（timeout 太短？port 會衝突？）
+Q71 [C-Medium] ✅ (562c) 分析 MCP client 的 stdio 通訊如果 server 不回應會怎樣
+Q72 [C-Medium] ✅ (358c) 幫我建一個 examples/simple_bot.rs 展示最簡單的使用方式
+Q73 [C-Medium] ✅ (405c) 找出 extract.rs 的所有 LLM prompt，統計總共多少 token
+Q74 [C-Medium] ✅ (148c) 幫我寫一個 pre-commit hook 自動跑 cargo fmt + clippy
+Q75 [C-Medium] ✅ (158c) 分析 tool_definitions() 回傳的 JSON 有沒有不符合 OpenAI schema spec 的地方
+Q76 [C-Medium] ✅ (1265c) Write a load test script that simulates 10 concurrent WebSocket connections
+Q77 [C-Medium] ✅ (2767c) Analyze the SQLite WAL mode setting and recommend optimizations
+Q78 [C-Medium] ✅ (575c) Create a Makefile with targets: build, test, lint, release, clean, bench
+Q79 [C-Medium] ✅ (2097c) Find all places where we log sensitive data (API keys, tokens)
+Q80 [C-Medium] ✅ (1904c) Analyze if the memory dedup prompt could produce false positives
+Q81 [C-Medium] ✅ (1630c) Write a tool that exports all memories for a user as JSON
+Q82 [C-Medium] ✅ (1701c) Find the critical path in the agent response flow and measure latency
+Q83 [C-Medium] ✅ (751c) Create a rate limiter middleware for the axum gateway
+Q84 [C-Medium] ✅ (1035c) Analyze what happens if two channels write to the same session simultaneously
+Q85 [C-Medium] ✅ (2477c) Write a test that verifies dangerous command blocking works
+Q86 [C-Medium] ✅ (783c) 分析 is_personal_fact() 的關鍵字列表是否完整，會不會漏判
+Q87 [C-Medium] ✅ (1553c) 幫我寫一個 smoke test 腳本：啟動 gateway → ping health → 發 WS 訊息 → 關閉
+Q88 [C-Medium] ✅ (318c) 分析 compress_history 的摘要品質，長對話會不會丟失重要上下文
+Q89 [C-Medium] ✅ (714c) 找出所有 Arc<Mutex> 使用的地方，分析有沒有 deadlock 風險
+Q90 [C-Medium] ✅ (1153c) 幫我寫一個 tool 執行的 audit log（記錄每次 tool call + 結果 + 耗時）
+Q91 [C-Medium] ✅ (523c) 分析 fetch_inbox 的 IMAP 連線是否每次都重新建立（應該 pool）
+Q92 [C-Medium] ✅ (502c) 幫我設計一個 /metrics endpoint 回傳 Prometheus 格式
+Q93 [C-Medium] ✅ (769c) 找出所有 clone() 呼叫，分析哪些可以改成 reference 減少 allocation
+Q94 [C-Medium] ✅ (1438c) 幫我寫一個 graceful shutdown handler 確保 DB 寫入完成
+Q95 [C-Medium] ✅ (1944c) 分析 Dockerfile 的 layer cache 效率，建議優化
+Q96 [C-Medium] ✅ (551c) 檢查所有 HTTP response 是否有正確的 error status code
+Q97 [C-Medium] ✅ (611c) 幫我建一個 dev mode 啟動時載入 mock 資料方便測試
+Q98 [C-Medium] ✅ (280c) 分析 graph search 的關鍵字匹配 vs embedding 搜尋的精度差異
+Q99 [C-Medium] ✅ (1413c) 幫我寫一個 config validator 啟動時檢查必要欄位
+Q100 [C-Medium] ✅ (414c) 找出所有可以用 const fn 或 lazy_static 優化的地方
+--- Progress: 100/365 | Pass: 96 | Fail: 4 | Elapsed: 4980s ---
+Q101 [D-Advanced] ✅ (984c) 分析整個 src/ 的模組依賴圖，找出耦合度最高的兩個模組，建議解耦方案
+Q102 [D-Advanced] ✅ (1951c) 重構 executor.rs 把 22 個 tool 的 match 改成 HashMap<String, Box<dyn Tool>> 的 registry pattern
+Q103 [D-Advanced] ✅ (667c) 設計一個 plugin system 讓外部可以用 .so/.dylib 載入自定義 tool
+Q104 [D-Advanced] ✅ (768c) 分析 agentic loop 在 tool call 失敗時的行為，設計 retry + fallback + circuit breaker
+Q105 [D-Advanced] ✅ (482c) 幫我實作 tool calling 的 streaming（tool 執行中就開始回傳部分結果）
+Q106 [D-Advanced] ✅ (526c) 分析整個記憶系統的資料流，從用戶輸入到 SQLite 寫入的每一步延遲
+Q107 [D-Advanced] ✅ (782c) 設計一個 multi-agent 架構：不同 channel 可以路由到不同 model + prompt
+Q108 [D-Advanced] ✅ (360c) 實作一個 conversation branching：用戶可以回到之前的對話節點重新對話
+Q109 [D-Advanced] ✅ (345c) 分析 500 題 benchmark 的失敗題目，找出 system prompt 的弱點並修復
+Q110 [D-Advanced] ✅ (2345c) 設計一個 A/B testing framework 比較不同 system prompt 的效果
+Q111 [D-Advanced] ✅ (339c) 實作 RAG：讀取指定目錄的所有文件，切片 + embedding + 儲存 + 搜尋
+Q112 [D-Advanced] ✅ (1443c) 設計一個 webhook system：外部事件（GitHub push、email）觸發 RustClaw 動作
+Q113 [D-Advanced] ✅ (552c) 分析 SQLite 在 100 萬條記憶下的效能瓶頸，設計分片或索引策略
+Q114 [D-Advanced] ✅ (1524c) 實作一個 diff viewer：tool 修改檔案前顯示 diff 讓用戶確認
+Q115 [D-Advanced] ✅ (576c) 設計一個 cost tracking system 記錄每次 LLM 呼叫的 token 使用量
+Q116 [D-Advanced] ✅ (337c) 分析跨 channel session 一致性問題：用戶在 TG 說的話 Discord 要多久才知道
+Q117 [D-Advanced] ✅ (316c) 幫我寫一個完整的 E2E test：啟動 server → WebSocket 連線 → handshake → agent 呼叫 → tool 執行 → 回應
+Q118 [D-Advanced] ✅ (480c) 設計一個 memory importance scoring：不是所有記憶都同等重要，要有權重
+Q119 [D-Advanced] ✅ (723c) 實作 agent 的 self-reflection：執行完動作後自動檢查結果是否正確
+Q120 [D-Advanced] ✅ (1170c) 分析我們的 tool schema 送給不同 LLM（GPT-4、Claude、Qwen）的相容性差異
+Q121 [D-Advanced] ✅ (4385c) Design a conversation summarizer that runs when history exceeds 20 messages
+Q122 [D-Advanced] ✅ (1716c) Implement a tool dependency graph (search_code should run before patch_file)
+Q123 [D-Advanced] ✅ (2605c) Analyze the security of our WebSocket protocol against replay attacks
+Q124 [D-Advanced] ✅ (3007c) Design a memory decay system where old unused memories lose relevance
+Q125 [D-Advanced] ✅ (2992c) Implement parallel tool execution for independent tool calls
+Q126 [D-Advanced] ✅ (3017c) Analyze our embedding storage efficiency and design a compression scheme
+Q127 [D-Advanced] ✅ (4362c) Design a feedback loop where tool success/failure improves future tool selection
+Q128 [D-Advanced] ✅ (1195c) Implement conversation export as structured Markdown with tool call details
+Q129 [D-Advanced] ✅ (1407c) Analyze the impact of system prompt length on model response quality
+Q130 [D-Advanced] ✅ (2043c) Design an auto-scaling strategy for handling traffic spikes
+Q131 [D-Advanced] ✅ (515c) 實作一個 tool execution sandbox 用 cgroup 限制 CPU + 記憶體
+Q132 [D-Advanced] ✅ (311c) 設計一個 knowledge graph visualization 用 D3.js 顯示 entity 關係
+Q133 [D-Advanced] ✅ (293c) 分析我們的 integer ID mapping 在超過 100 個 existing memories 時是否有效
+Q134 [D-Advanced] ✅ (254c) 實作一個 conversation search：用戶可以搜尋歷史對話內容
+Q135 [D-Advanced] ✅ (334c) 設計一個 auto-tagging system 自動給記憶加標籤（work, personal, health）

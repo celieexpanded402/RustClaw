@@ -1,1 +1,0 @@
-## [v0.3.0] - $(date +%Y-%m-%d)\n### Added\n- New features for v0.3.0\n\n[Unreleased]\n\n[Unreleased]: https://github.com/myrepo/my-repo/compare/v0.2.0...HEAD
