@@ -138,3 +138,14 @@ Q132 [D-Advanced] ✅ (311c) 設計一個 knowledge graph visualization 用 D3.j
 Q133 [D-Advanced] ✅ (293c) 分析我們的 integer ID mapping 在超過 100 個 existing memories 時是否有效
 Q134 [D-Advanced] ✅ (254c) 實作一個 conversation search：用戶可以搜尋歷史對話內容
 Q135 [D-Advanced] ✅ (334c) 設計一個 auto-tagging system 自動給記憶加標籤（work, personal, health）
+Q136 [D-Advanced] ✅ (796c) 分析 Graph 的 soft-delete 長期累積會不會影響查詢效能
+Q137 [D-Advanced] ✅ (309c) 實作一個 memory conflict resolution UI：當 LLM 不確定 ADD vs UPDATE 時問用戶
+Q138 [D-Advanced] ✅ (670c) 設計一個 multi-workspace 支援：不同專案目錄隔離 tool 權限
+Q139 [D-Advanced] ✅ (386c) 分析我們 24 個 few-shot 範例的效果，哪些刪掉不影響正確率
+Q140 [D-Advanced] ✅ (775c) 實作一個 agent chain：第一個 agent 分析問題，第二個 agent 執行
+Q141 [D-Advanced] ✅ (838c) 設計一個 rollback 機制：tool 執行出錯時自動復原（undo write_file, undo patch）
+Q142 [D-Advanced] ✅ (408c) 分析不同本地模型（qwen2.5 14b/32b, llama3, gemma）的 tool calling 成功率差異
+Q143 [D-Advanced] ✅ (1169c) 實作一個 context window estimator：送出前預估 token 數，超過就壓縮
+Q144 [D-Advanced] ✅ (809c) 設計一個 tool recommendation system：根據用戶問題主動建議可用的 tool
+Q145 [D-Advanced] ✅ (554c) 分析我們的 IMAP email 實作在 Gmail 的 OAuth2 限制下是否能正常運作
+Q146 [D-Advanced] ✅ (1720c) 實作一個 session snapshot：可以保存和還原對話狀態

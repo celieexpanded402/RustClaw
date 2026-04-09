@@ -22,7 +22,7 @@ Q5 [日常] ✅ (197c) Docker 有在跑嗎？
 Q6 [日常] ✅ (329c) ollama 有在跑嗎？
   → Ollama 正在運行。以下是相關的進程信息：
 
-- PID: 56698，進程位址：/Applications/Ollama.app/Contents/Resources/ollama runner --model /Users/admacmini/.ollama/models/blob
+- PID: 56698，進程位址：/Applications/Ollama.app/Contents/Resources/ollama runner --model /Users/***/.ollama/models/blob
 Q7 [日常] ✅ (184c) PM2 上面有哪些服務？
   → PM2 上面有以下服務：
 - `threads-backend`：狀態為線上，CPU使用率0.2%，記憶體使用量51.6MB，重啟次數8
