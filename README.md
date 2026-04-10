@@ -11,11 +11,11 @@
 [![Rust](https://img.shields.io/badge/Rust-1.85+-orange.svg)](https://www.rust-lang.org/)
 [![Built with Claude Code](https://img.shields.io/badge/Built%20with-Claude%20Code-blueviolet)](https://claude.ai)
 
-**7.5 MB binary** · **14 MB RAM** · **5,918 lines** · **99.7% BFCL** · **95.5% T-Eval** · **0% hallucination**
+**7.5 MB binary** · **14 MB RAM** · **5,296 lines** · **99.7% BFCL** · **95.5% T-Eval** · **0% hallucination**
 
 [Quick Start](#-quick-start) · [Features](#-features) · [Benchmark](#-benchmark) · [Architecture](#-architecture) · [Roadmap](#-roadmap)
 
-🌐 [繁體中文](docs/README.zh-TW.md) · [简体中文](docs/README.zh-CN.md) · [日本語](docs/README.ja.md) · [한국어](docs/README.ko.md) · [Español](docs/README.es.md) · [Português](docs/README.pt.md)
+🌐 [繁體中文](docs/README.zh-TW.md) · [简体中文](docs/README.zh-CN.md) · [한국어](docs/README.ko.md)
 
 </div>
 
@@ -34,7 +34,7 @@ RustClaw is the 80/20 version of OpenClaw — the features that matter, in a sin
 <tr><td>📦 Binary</td><td><strong>7.5 MB</strong> static</td><td>requires Node.js 24 + npm</td></tr>
 <tr><td>💾 Idle RAM</td><td><strong>14 MB</strong></td><td>1 GB+</td></tr>
 <tr><td>⚡ Startup</td><td><strong>&lt; 100 ms</strong></td><td>5–10 s</td></tr>
-<tr><td>📝 Code</td><td><strong>5,918 lines</strong></td><td>~430,000 lines</td></tr>
+<tr><td>📝 Code</td><td><strong>5,296 lines</strong></td><td>~430,000 lines</td></tr>
 <tr><td>🧠 Memory</td><td>Three-tier (vector + graph + history)</td><td>Basic session</td></tr>
 <tr><td>🔧 Tools</td><td>22 built-in + MCP</td><td>Plugin system</td></tr>
 <tr><td>🤖 LLM</td><td>Anthropic, OpenAI, Ollama, Gemini</td><td>OpenAI</td></tr>
@@ -174,16 +174,9 @@ rustclaw github fix 123
 
 ### 🧠 Three-Tier Memory
 
-Powered by [R-Mem](https://github.com/Adaimade/R-Mem) architecture.
+Memory is delegated to [**R-Mem**](https://github.com/Adaimade/R-Mem) — a separate Rust crate that handles vector recall, fact extraction, contradiction resolution, and entity-relation graphs. RustClaw is a thin wrapper that adds mixed-mode scoping on top.
 
-```
-├─ 📝 Short-term ── conversation history (SQLite)
-├─ 📦 Long-term ─── LLM fact extraction → dedup → ADD/UPDATE/DELETE/NONE
-│    └── Integer ID mapping · contradiction detection · semantic dedup
-└─ 🕸️ Graph ─────── entity + relation extraction with soft-delete
-```
-
-**Mixed-mode recall** — three scopes merged:
+**Mixed-mode recall** — three scopes merged on every query:
 
 | Scope | Example | Shared across |
 |---|---|---|
@@ -276,11 +269,11 @@ src/
 ├── agent/runner.rs      LLM streaming + agentic loop + history compression
 ├── channels/            Telegram (teloxide) + Discord (serenity)
 ├── tools/               22 tools: fs, shell, search, discord, email, system, github, mcp
-├── session/             MemoryManager + SQLite store + graph + embedding + extraction
+├── session/             SessionStore (history) + MemoryManager (R-Mem wrapper)
 └── cron/                Scheduled jobs (system, email, GitHub)
 ```
 
-**30 files · 5,918 lines · 7.5 MB binary · Zero external services**
+**27 files · 5,296 lines · 7.5 MB binary · Zero external services**
 
 ---
 
@@ -298,7 +291,6 @@ src/
 | ✅ | SQLite persistence |
 | 🔲 | Web UI dashboard |
 | 🔲 | Slack / LINE channels |
-| 🔲 | RAG (document search) |
 | 🔲 | Multi-agent routing |
 | 🔲 | WASM plugin system |
 | 🔲 | Prometheus metrics |

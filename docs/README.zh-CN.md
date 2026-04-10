@@ -11,11 +11,11 @@
 [![Rust](https://img.shields.io/badge/Rust-1.85+-orange.svg)](https://www.rust-lang.org/)
 [![Built with Claude Code](https://img.shields.io/badge/Built%20with-Claude%20Code-blueviolet)](https://claude.ai)
 
-**7.5 MB binary** · **14 MB 内存** · **5,918 行** · **99.7% BFCL** · **95.5% T-Eval** · **0% 幻觉**
+**7.5 MB binary** · **14 MB 内存** · **5,296 行** · **99.7% BFCL** · **95.5% T-Eval** · **0% 幻觉**
 
 [快速开始](#-快速开始) · [功能](#-功能) · [Benchmark](#-benchmark) · [架构](#-架构) · [Roadmap](#-roadmap)
 
-🌐 [English](../README.md) · [繁體中文](README.zh-TW.md) · [日本語](README.ja.md) · [한국어](README.ko.md) · [Español](README.es.md) · [Português](README.pt.md)
+🌐 [English](../README.md) · [繁體中文](README.zh-TW.md) · [한국어](README.ko.md)
 
 </div>
 
@@ -34,7 +34,7 @@ RustClaw 是 OpenClaw 的 80/20 版本——把真正重要的功能装进一个
 <tr><td>📦 Binary</td><td><strong>7.5 MB</strong> 静态</td><td>需要 Node.js 24 + npm</td></tr>
 <tr><td>💾 空闲内存</td><td><strong>14 MB</strong></td><td>1 GB+</td></tr>
 <tr><td>⚡ 启动</td><td><strong>&lt; 100 ms</strong></td><td>5–10 秒</td></tr>
-<tr><td>📝 代码</td><td><strong>5,918 行</strong></td><td>~430,000 行</td></tr>
+<tr><td>📝 代码</td><td><strong>5,296 行</strong></td><td>~430,000 行</td></tr>
 <tr><td>🧠 记忆</td><td>三层(向量 + 图谱 + 历史)</td><td>基本 session</td></tr>
 <tr><td>🔧 工具</td><td>22 个内置 + MCP</td><td>插件系统</td></tr>
 <tr><td>🤖 LLM</td><td>Anthropic、OpenAI、Ollama、Gemini</td><td>OpenAI</td></tr>
@@ -174,16 +174,9 @@ rustclaw github fix 123
 
 ### 🧠 三层记忆
 
-由 [R-Mem](https://github.com/Adaimade/R-Mem) 架构驱动。
+记忆系统委托给 [**R-Mem**](https://github.com/Adaimade/R-Mem)——一个独立的 Rust crate,负责向量召回、事实抽取、矛盾解决、实体关系图谱。RustClaw 只是上层的轻量包装,加上混合范围 scoping。
 
-```
-├─ 📝 短期 ──── 对话历史(SQLite)
-├─ 📦 长期 ──── LLM 事实抽取 → 去重 → ADD/UPDATE/DELETE/NONE
-│    └── 整数 ID 对应 · 矛盾检测 · 语义去重
-└─ 🕸️ 图谱 ─── 实体 + 关系抽取,含软删除
-```
-
-**混合范围检索** — 三种范围合并:
+**混合范围召回** — 每次查询合并三种范围:
 
 | 范围 | 示例 | 共享于 |
 |---|---|---|
@@ -276,11 +269,11 @@ src/
 ├── agent/runner.rs      LLM streaming + agentic loop + 历史压缩
 ├── channels/            Telegram (teloxide) + Discord (serenity)
 ├── tools/               22 个工具:fs、shell、search、discord、email、system、github、mcp
-├── session/             MemoryManager + SQLite store + 图谱 + embedding + 抽取
+├── session/             SessionStore(历史) + MemoryManager(R-Mem 包装)
 └── cron/                排程任务(system、email、GitHub)
 ```
 
-**30 个文件 · 5,918 行 · 7.5 MB binary · 零外部服务**
+**27 个文件 · 5,296 行 · 7.5 MB binary · 零外部服务**
 
 ---
 
@@ -298,7 +291,6 @@ src/
 | ✅ | SQLite 持久化 |
 | 🔲 | Web UI dashboard |
 | 🔲 | Slack / LINE 通道 |
-| 🔲 | RAG(文档搜索) |
 | 🔲 | 多 agent 路由 |
 | 🔲 | WASM 插件系统 |
 | 🔲 | Prometheus metrics |

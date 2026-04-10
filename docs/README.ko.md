@@ -11,11 +11,11 @@
 [![Rust](https://img.shields.io/badge/Rust-1.85+-orange.svg)](https://www.rust-lang.org/)
 [![Built with Claude Code](https://img.shields.io/badge/Built%20with-Claude%20Code-blueviolet)](https://claude.ai)
 
-**7.5 MB 바이너리** · **14 MB 메모리** · **5,918 라인** · **99.7% BFCL** · **95.5% T-Eval** · **0% 환각**
+**7.5 MB 바이너리** · **14 MB 메모리** · **5,296 라인** · **99.7% BFCL** · **95.5% T-Eval** · **0% 환각**
 
 [빠른 시작](#-빠른-시작) · [기능](#-기능) · [Benchmark](#-benchmark) · [아키텍처](#-아키텍처) · [Roadmap](#-roadmap)
 
-🌐 [English](../README.md) · [繁體中文](README.zh-TW.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md) · [Español](README.es.md) · [Português](README.pt.md)
+🌐 [English](../README.md) · [繁體中文](README.zh-TW.md) · [简体中文](README.zh-CN.md)
 
 </div>
 
@@ -34,7 +34,7 @@ RustClaw는 OpenClaw의 80/20 버전입니다. 정말 중요한 기능만을 하
 <tr><td>📦 바이너리</td><td><strong>7.5 MB</strong> 정적</td><td>Node.js 24 + npm 필요</td></tr>
 <tr><td>💾 유휴 메모리</td><td><strong>14 MB</strong></td><td>1 GB+</td></tr>
 <tr><td>⚡ 시작</td><td><strong>&lt; 100 ms</strong></td><td>5–10초</td></tr>
-<tr><td>📝 코드</td><td><strong>5,918 라인</strong></td><td>~430,000 라인</td></tr>
+<tr><td>📝 코드</td><td><strong>5,296 라인</strong></td><td>~430,000 라인</td></tr>
 <tr><td>🧠 메모리</td><td>3계층(벡터 + 그래프 + 히스토리)</td><td>기본 세션</td></tr>
 <tr><td>🔧 도구</td><td>22개 내장 + MCP</td><td>플러그인 시스템</td></tr>
 <tr><td>🤖 LLM</td><td>Anthropic, OpenAI, Ollama, Gemini</td><td>OpenAI</td></tr>
@@ -174,16 +174,9 @@ rustclaw github fix 123
 
 ### 🧠 3계층 메모리
 
-[R-Mem](https://github.com/Adaimade/R-Mem) 아키텍처로 구동됩니다.
+메모리 시스템은 [**R-Mem**](https://github.com/Adaimade/R-Mem)에 위임됩니다 — 벡터 회상, 사실 추출, 모순 해결, 엔티티 관계 그래프를 담당하는 별도의 Rust 크레이트입니다. RustClaw는 그 위에 혼합 스코프(mixed-mode scoping)를 추가한 얇은 래퍼입니다.
 
-```
-├─ 📝 단기 ──── 대화 히스토리 (SQLite)
-├─ 📦 장기 ──── LLM 사실 추출 → 중복 제거 → ADD/UPDATE/DELETE/NONE
-│    └── 정수 ID 매핑 · 모순 감지 · 의미론적 중복 제거
-└─ 🕸️ 그래프 ── 엔티티 + 관계 추출, 소프트 삭제 포함
-```
-
-**하이브리드 범위 조회** — 세 가지 범위가 병합됨:
+**혼합 스코프 회상** — 각 쿼리마다 세 가지 스코프를 병합:
 
 | 범위 | 예시 | 공유 대상 |
 |---|---|---|
@@ -276,11 +269,11 @@ src/
 ├── agent/runner.rs      LLM streaming + agentic loop + 히스토리 압축
 ├── channels/            Telegram (teloxide) + Discord (serenity)
 ├── tools/               22개 도구: fs, shell, search, discord, email, system, github, mcp
-├── session/             MemoryManager + SQLite store + 그래프 + embedding + 추출
+├── session/             SessionStore(히스토리) + MemoryManager(R-Mem 래퍼)
 └── cron/                예약 작업 (system, email, GitHub)
 ```
 
-**30개 파일 · 5,918 라인 · 7.5 MB 바이너리 · 외부 서비스 제로**
+**27개 파일 · 5,296 라인 · 7.5 MB 바이너리 · 외부 서비스 제로**
 
 ---
 
@@ -298,7 +291,6 @@ src/
 | ✅ | SQLite 영속성 |
 | 🔲 | Web UI 대시보드 |
 | 🔲 | Slack / LINE 채널 |
-| 🔲 | RAG (문서 검색) |
 | 🔲 | 멀티 에이전트 라우팅 |
 | 🔲 | WASM 플러그인 시스템 |
 | 🔲 | Prometheus metrics |
