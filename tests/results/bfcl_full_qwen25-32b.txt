@@ -1,0 +1,10 @@
+=== Gorilla BFCL — Full Results ===
+Model: qwen2.5:32b (Ollama local)
+Date: 2026-04-10
+
+simple_python:     399/400  (99.75%)  7.3s/q
+multiple:          199/200  (99.5%)   8.4s/q
+parallel:          200/200  (100%)    12.0s/q
+parallel_multiple: 200/200  (100%)    15.7s/q
+
+Total: 998/1000 (99.8%)

@@ -223,8 +223,11 @@ Tested on the **official [Gorilla BFCL](https://github.com/ShishirPatil/gorilla)
 | Test | Score | Questions | Speed |
 |---|---|---|---|
 | **BFCL simple_python** | **99.75%** (399/400) | 400 | 7.3s/q |
+| **BFCL multiple** | **99.5%** (199/200) | 200 | 8.4s/q |
+| **BFCL parallel** | **100%** (200/200) | 200 | 12.0s/q |
+| **BFCL parallel_multiple** | **100%** (200/200) | 200 | 15.7s/q |
 
-> The single "failure" was a scorer false negative — the model called the correct function with correct arguments. **Effective accuracy: 100%.**
+> 1,000 questions on the official BFCL benchmark. Two perfect scores on parallel function calling.
 
 ### Internal Benchmark
 
