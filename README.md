@@ -11,7 +11,7 @@
 [![Rust](https://img.shields.io/badge/Rust-1.85+-orange.svg)](https://www.rust-lang.org/)
 [![Built with Claude Code](https://img.shields.io/badge/Built%20with-Claude%20Code-blueviolet)](https://claude.ai)
 
-**7.5 MB binary** · **14 MB RAM** · **5,918 lines** · **99.75% BFCL score** · **0% hallucination**
+**7.5 MB binary** · **14 MB RAM** · **5,918 lines** · **99.7% BFCL** · **95.5% T-Eval** · **0% hallucination**
 
 [Quick Start](#-quick-start) · [Features](#-features) · [Benchmark](#-benchmark) · [Architecture](#-architecture) · [Roadmap](#-roadmap)
 
@@ -228,6 +228,19 @@ Tested on the **official [Gorilla BFCL](https://github.com/ShishirPatil/gorilla)
 | **BFCL parallel_multiple** | **100%** (200/200) | 200 | 15.7s/q |
 
 > 1,000 questions on the official BFCL benchmark. Two perfect scores on parallel function calling.
+
+### T-Eval (Shanghai AI Lab)
+
+Tested on **[T-Eval](https://github.com/open-compass/T-Eval)** — Shanghai AI Lab's tool-use evaluation suite covering planning, retrieval, review, and instruction following:
+
+| Test | Score | Questions | Speed |
+|---|---|---|---|
+| **T-Eval retrieve** | **98%** (542/553) | 553 | 14.5s/q |
+| **T-Eval plan** | **96%** (535/553) | 553 | 25.6s/q |
+| **T-Eval review** | **96%** (472/487) | 487 | 3.5s/q |
+| **T-Eval instruct** | **92%** (514/553) | 553 | 8.2s/q |
+
+> 2,146 questions across four core categories. Average **95.5%** — strong tool selection, multi-step planning, and self-review.
 
 ### Internal Benchmark
 

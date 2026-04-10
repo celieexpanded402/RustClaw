@@ -1,42 +1,86 @@
-🌐 [English](../README.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md) · [한국어](README.ko.md) · [Español](README.es.md) · [Português](README.pt.md)
+<div align="center">
 
 # RustClaw
 
-**OpenClaw 的 Rust 精簡替代品。** 單一 binary。不需要 runtime。完整 agent 能力。
+### Rust 寫的 AI Agent 框架
 
-|                   | **RustClaw**       | **OpenClaw**              |
-|-------------------|--------------------|---------------------------|
-| Binary / Runtime  | **6 MB** 靜態連結   | 需要 Node.js 24 + npm     |
-| 閒置記憶體 (RSS)   | **7.9 MB**         | 1 GB+                     |
-| 啟動時間           | **< 100 ms**       | 5-10 秒                   |
-| 程式碼行數         | **~4,000**         | ~430,000                  |
-| 依賴管理           | 編譯時打包          | npm install...             |
+**[OpenClaw](https://github.com/nicepkg/OpenClaw) 的精簡替代品。**<br>
+**單一 binary。22 個工具。三層記憶。Telegram + Discord + MCP。**
 
----
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../LICENSE)
+[![Rust](https://img.shields.io/badge/Rust-1.85+-orange.svg)](https://www.rust-lang.org/)
+[![Built with Claude Code](https://img.shields.io/badge/Built%20with-Claude%20Code-blueviolet)](https://claude.ai)
 
-## 為什麼做這個
+**7.5 MB binary** · **14 MB 記憶體** · **5,918 行** · **99.7% BFCL** · **95.5% T-Eval** · **0% 幻覺**
 
-OpenClaw 功能很多，但對大多數場景來說太重了。如果你只需要一個能串接 Telegram、Discord、GitHub 的 LLM agent——有 tool 呼叫能力和 WebSocket 控制平面——你不需要 43 萬行 TypeScript 和 1GB 的記憶體開銷。
+[快速開始](#-快速開始) · [功能](#-功能) · [Benchmark](#-benchmark) · [架構](#-架構) · [Roadmap](#-roadmap)
 
-RustClaw 是 80/20 法則的產物：把真正重要的功能裝進一個 `cargo build`。
+🌐 [English](../README.md) · [简体中文](README.zh-CN.md) · [日本語](README.ja.md) · [한국어](README.ko.md) · [Español](README.es.md) · [Português](README.pt.md)
 
-完全使用 [Claude Code](https://claude.ai/code) 構建，零人工撰寫程式碼。
+</div>
 
 ---
 
-## 快速開始
+## 為什麼做 RustClaw？
+
+起點很單純：有人把 OpenClaw 用 Go 重寫，把記憶體從 1GB+ 砍到 35MB。很厲害。但我們想——能不能再進一步？
+
+大多數人不需要 43 萬行 TypeScript。他們需要的是一個能講 Telegram、讀檔案、跑程式、出包的時候開 GitHub PR 的 agent。就這樣。
+
+RustClaw 是 OpenClaw 的 80/20 版本——把真正重要的功能裝進一個 `cargo build`。
+
+<table>
+<tr><td></td><td><strong>RustClaw</strong></td><td><strong>OpenClaw</strong></td></tr>
+<tr><td>📦 Binary</td><td><strong>7.5 MB</strong> 靜態</td><td>需要 Node.js 24 + npm</td></tr>
+<tr><td>💾 閒置記憶體</td><td><strong>14 MB</strong></td><td>1 GB+</td></tr>
+<tr><td>⚡ 啟動</td><td><strong>&lt; 100 ms</strong></td><td>5–10 秒</td></tr>
+<tr><td>📝 程式碼</td><td><strong>5,918 行</strong></td><td>~430,000 行</td></tr>
+<tr><td>🧠 記憶</td><td>三層（向量 + 圖譜 + 歷史）</td><td>基本 session</td></tr>
+<tr><td>🔧 工具</td><td>22 個內建 + MCP</td><td>外掛系統</td></tr>
+<tr><td>🤖 LLM</td><td>Anthropic、OpenAI、Ollama、Gemini</td><td>OpenAI</td></tr>
+<tr><td>📱 通道</td><td>Telegram、Discord、WebSocket</td><td>Web UI</td></tr>
+</table>
+
+> [!NOTE]
+> RustClaw 不是要取代 OpenClaw。它證明的是——AI agent 真正有用的核心，不需要一 GB 的記憶體。需要的是好的架構、對的語言、以及願意用更清楚的限制重新開始的決心。
+
+完全使用 [Claude Code](https://claude.ai/code) 由 [Ad Huang](https://github.com/Adaimade) 構建。零人工撰寫程式碼。
+
+---
+
+## 💡 核心優勢
+
+**🪶 任何地方都能跑** — 7.5 MB binary、14 MB 記憶體。樹莓派、5 美元 VPS、你的筆電。不需要 Node.js、Python、Docker。
+
+**🧠 什麼都記得** — 三層記憶（向量 + 圖譜 + 歷史），混合範圍 scoping。你在 Telegram 告訴 bot 你的名字，它在 Discord 會記得。事實自動萃取、矛盾自動解決。
+
+**🛡️ 安全為先** — 14 種危險指令模式封鎖。工具輸出截斷。Patch 檔修改前先驗證。錯誤自動重試恢復。120 秒 timeout 帶優雅 fallback。
+
+**🔧 真的會做事** — 500 題 benchmark 工具呼叫準確率 97%。零幻覺率。Bot 真的會讀你的檔案、跑你的指令、開 PR——不是只描述它「會」做什麼。
+
+**🔌 支援 MCP** — 連接任何 MCP server。工具自動發現、透明路由。LLM 看到的是統一的工具列表——本地跟遠端沒差別。
+
+**📈 經過 benchmark 驗證** — 500 題專業 benchmark 涵蓋日常維運、寫程式、系統管理、對抗式 prompt。v3→v5 進步：81% → 97%。零 timeout。
+
+**⚙️ 受 Claude Code 啟發** — 理解優先的工具排序、歷史壓縮、workspace context 載入、錯誤重試提示。讓 Claude Code 有效的同樣模式，套用到開源 agent 上。
+
+---
+
+## 🚀 快速開始
 
 ### 前置需求
 
-- Rust 工具鏈（`curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`）
-- LLM 後端：[Ollama](https://ollama.com)（本地）或 [Anthropic API key](https://console.anthropic.com)
+| 需求 | 安裝 |
+|---|---|
+| Rust 1.85+ | `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \| sh` |
+| LLM 後端 | [Ollama](https://ollama.com)、[OpenAI](https://platform.openai.com)、[Anthropic](https://console.anthropic.com) 或 [Gemini](https://ai.google.dev) |
 
-### 編譯
+### 建置與執行
 
 ```bash
 git clone https://github.com/Adaimade/RustClaw.git && cd RustClaw
 cargo build --release
-# Binary: target/release/rustclaw (6 MB)
+# → target/release/rustclaw (7.5 MB)
 ```
 
 ### 設定
@@ -46,7 +90,14 @@ mkdir -p ~/.rustclaw
 cp config.example.toml ~/.rustclaw/config.toml
 ```
 
-Ollama 最小設定：
+<table>
+<tr>
+<td><strong>Ollama（本地）</strong></td>
+<td><strong>Anthropic</strong></td>
+<td><strong>Gemini</strong></td>
+</tr>
+<tr>
+<td>
 
 ```toml
 [agent]
@@ -54,10 +105,10 @@ provider = "openai"
 api_key = "ollama"
 base_url = "http://127.0.0.1:11434"
 model = "qwen2.5:32b"
-system_prompt = "You are a coding assistant with tool access."
 ```
 
-Anthropic 設定：
+</td>
+<td>
 
 ```toml
 [agent]
@@ -66,219 +117,202 @@ api_key = "sk-ant-..."
 model = "claude-sonnet-4-20250514"
 ```
 
-### 啟動
+</td>
+<td>
+
+```toml
+[agent]
+provider = "openai"
+api_key = "your-key"
+base_url = "https://generativelanguage.googleapis.com/v1beta/openai"
+model = "gemini-2.5-flash"
+```
+
+</td>
+</tr>
+</table>
+
+> **安全提醒：** RustClaw 預設綁定 `0.0.0.0` 方便雲端部署。永遠不要把 API key 寫在程式碼裡——用 `~/.rustclaw/config.toml`（已 gitignored）或環境變數（`RUSTCLAW__AGENT__API_KEY`）。
+
+### 執行
 
 ```bash
-# 啟動所有服務（gateway + channels + cron）
+# 啟動全部（gateway + 通道 + cron + 記憶）
 rustclaw gateway
 
-# 或直接跟 agent 對話
-rustclaw agent "列出 src/ 目錄下的所有 .rs 檔案"
+# 單次 agent 呼叫，含工具存取
+rustclaw agent "列出所有 .rs 檔案並計算總行數"
+
+# GitHub 操作
+rustclaw github scan
+rustclaw github fix 123
 ```
 
 ---
 
-## 功能
+## ✨ 功能
 
-### Gateway（WebSocket 控制平面）
+### 🔧 工具呼叫（Agentic Loop）
 
-相容 OpenClaw 的 WebSocket 協議，端點 `ws://127.0.0.1:18789/ws`。
+22 個內建工具自主執行。支援 Anthropic 與 OpenAI function calling。每個請求最多 10 輪迭代。
 
-完整握手流程：`connect` -> `challenge` -> `auth` -> `hello-ok`，之後是 request/response 搭配 streaming agent events。
+**分層工具載入**——先理解、再動手、再檢查：
 
-```bash
-rustclaw gateway    # 啟動伺服器
-rustclaw health     # HTTP 健康檢查
-rustclaw status     # WebSocket 握手測試
+```
+👁️ 理解                    ⚡ 動手                  🔍 檢查
+├── read_file              ├── run_command           ├── process_check
+├── list_dir               ├── write_file            ├── docker_status
+└── search_code            └── patch_file            ├── system_stats
+                                                     ├── http_ping
+💬 Discord（按需）         📧 Email（按需）          ├── pm2_status
+├── 建立/刪除頻道          ├── fetch_inbox           └── process_list
+├── 建立角色/設定主題      ├── read_email
+└── 踢人/封鎖              └── send_email
 ```
 
-### Channels
+**安全：** 14 種危險模式封鎖 · 輸出截斷 4000 字 · patch 驗證 · 錯誤重試提示 · 120 秒優雅 timeout
 
-#### Telegram
+### 🧠 三層記憶
 
-透過 teloxide 長輪詢。以漸進式訊息編輯模擬 streaming 回應。
+由 [R-Mem](https://github.com/Adaimade/R-Mem) 架構驅動。
 
-```toml
-[channels.telegram]
-enabled = true
-bot_token = "123456:ABC-..."
-allowed_user_ids = []    # 空 = 允許所有人
-stream_edit = true       # 即時編輯模擬串流
+```
+├─ 📝 短期 ──── 對話歷史（SQLite）
+├─ 📦 長期 ──── LLM 事實萃取 → 去重 → ADD/UPDATE/DELETE/NONE
+│    └── 整數 ID 對應 · 矛盾偵測 · 語意去重
+└─ 🕸️ 圖譜 ─── 實體 + 關係萃取，含軟刪除
 ```
 
-#### Discord
+**混合範圍取回** — 三種範圍合併：
 
-基於 Serenity 的 bot，回應 @mention 和私訊，內建伺服器管理工具。
+| 範圍 | 範例 | 共享於 |
+|---|---|---|
+| Local | `telegram:-100xxx` | 單一群組 |
+| User | `user:12345` | 一個人在所有通道 |
+| Global | `global:system` | 所有人 |
 
-```toml
-[channels.discord]
-enabled = true
-bot_token = "your-token"
-allowed_guild_ids = []   # 空 = 所有伺服器
-mention_only = true      # 只回應 @mention 和私訊
-```
+### 📱 通道
 
-設定方式：[Discord Developer Portal](https://discord.com/developers/applications) -> 建立應用程式 -> Bot 分頁 -> 開啟 **MESSAGE CONTENT INTENT** -> 使用 `permissions=274877975552&scope=bot` 邀請。
-
-### Tool Calling（Agentic Loop）
-
-Agent 可自主使用工具。支援 Anthropic 和 OpenAI function calling 格式。每次請求最多 10 輪 tool 迭代。
-
-**內建工具：**
-
-| Tool | 說明 |
+| 通道 | 功能 |
 |---|---|
-| `read_file` | 讀取檔案內容（> 100KB 自動截斷）|
-| `write_file` | 寫入/建立檔案（自動建立目錄）|
-| `patch_file` | 檔案內的尋找與替換 |
-| `list_dir` | 目錄樹（限制深度）|
-| `run_command` | Shell 執行（限制在 workspace 內，有 timeout）|
-| `search_code` | 類 grep 程式碼搜尋（純 Rust）|
-| `discord_create_channel` | 建立 text/voice/category 頻道 |
-| `discord_delete_channel` | 刪除頻道 |
-| `discord_create_role` | 建立角色（含顏色）|
-| `discord_set_channel_topic` | 設定頻道主題 |
-| `discord_kick_member` | 踢出成員 |
-| `discord_ban_member` | 封禁成員 |
+| **Telegram** | 長輪詢 · streaming 編輯 · ACL · session 歷史 |
+| **Discord** | @mention · 伺服器管理 · `scan` / `fix issue #N` / `pr status` |
+| **Gateway** | OpenClaw 相容 WebSocket，位於 `:18789/ws` |
+
+### 🔌 MCP Client
 
 ```toml
-[tools]
-enabled = true
-workspace_dir = "."
-allow_exec = true
-exec_timeout_secs = 30
+[mcp]
+servers = [
+  { name = "fs", command = "npx @modelcontextprotocol/server-filesystem /tmp" },
+]
 ```
 
-### GitHub 整合
+### 🐙 GitHub · ⏰ Cron · 📧 Email
 
-掃描 repo，用 LLM 分析 issue 並自動產生 PR。
-
-```toml
-[github]
-token = "ghp_..."
-repos = ["owner/repo"]
-notify_discord_channel = "123456789"
-```
-
-```bash
-rustclaw github scan          # 掃描所有設定的 repo
-rustclaw github fix 123       # 為 issue #123 自動產生 PR
-```
-
-**Auto-PR 流程：** 取得 issue -> LLM 產生修正 -> 建立分支 `rustclaw/fix-issue-N` -> commit -> 開 PR。
-
-Token 需要 `repo` scope（純公開 repo 用 `public_repo` 即可）。
-
-### Cron 排程
-
-```toml
-[cron]
-github_scan = "0 0 9 * * *"  # 每天 09:00（秒 分 時 日 月 週）
-```
-
-掃描結果會記錄到 log，也可選擇發送到 Discord 頻道。
+自動掃描 repo · 從 issue 自動 PR · 系統監控告警 · email 分類——全部透過 cron 排程，通知到 Discord。
 
 ---
 
-## Discord 指令
+## 📊 Benchmark
 
-@mention bot 時可用：
+### Berkeley Function Calling Leaderboard (BFCL)
 
-```
-@RustClaw scan                    # GitHub repo 掃描報告
-@RustClaw fix issue #42           # 為 issue 42 自動產生 PR
-@RustClaw pr status               # 列出 bot 建立的 PR
-@RustClaw 讀取 src/main.rs 並摘要
-@RustClaw 建立一個叫 announcements 的頻道
-@RustClaw 這個專案有哪些檔案？
-@RustClaw 跑 cargo test 告訴我哪裡失敗
-```
+在**官方 [Gorilla BFCL](https://github.com/ShishirPatil/gorilla)** benchmark 上測試——業界 function calling 評估的標竿：
 
----
+| 測試 | 分數 | 題數 | 速度 |
+|---|---|---|---|
+| **BFCL simple_python** | **99.75%** (399/400) | 400 | 7.3s/題 |
+| **BFCL multiple** | **99.5%** (199/200) | 200 | 8.4s/題 |
+| **BFCL parallel** | **100%** (200/200) | 200 | 12.0s/題 |
+| **BFCL parallel_multiple** | **100%** (200/200) | 200 | 15.7s/題 |
 
-## CLI
+> 官方 BFCL 1,000 題。平行 function calling 兩個滿分。
 
-```
-rustclaw [OPTIONS] <COMMAND>
+### T-Eval（上海 AI Lab）
 
-Commands:
-  gateway              啟動 gateway + 所有啟用的 channels + cron
-  agent <MESSAGE>      傳送訊息給 agent（含 tool 存取）
-  health               對本地 gateway 做 HTTP 健康檢查
-  status               WebSocket 狀態檢查
-  github scan          掃描設定的 repo
-  github fix <N>       為 issue N 自動產生 PR
+在 **[T-Eval](https://github.com/open-compass/T-Eval)** 上測試——上海 AI Lab 的工具使用評估套件，涵蓋規劃、檢索、檢查與指令跟隨：
 
-Options:
-  -c, --config <PATH>  設定檔路徑
-  -h, --help           顯示說明
-  -V, --version        顯示版本
-```
+| 測試 | 分數 | 題數 | 速度 |
+|---|---|---|---|
+| **T-Eval retrieve** | **98%** (542/553) | 553 | 14.5s/題 |
+| **T-Eval plan** | **96%** (535/553) | 553 | 25.6s/題 |
+| **T-Eval review** | **96%** (472/487) | 487 | 3.5s/題 |
+| **T-Eval instruct** | **92%** (514/553) | 553 | 8.2s/題 |
 
----
+> 四個核心類別共 2,146 題。平均 **95.5%** —— 工具選擇、多步規劃、自我檢查皆強。
 
-## 架構
+### 內部 Benchmark
 
-```
-                          rustclaw gateway
-                               |
-              +----------------+----------------+
-              |                |                |
-         WebSocket        Telegram          Discord
-        :18789/ws        (teloxide)       (serenity)
-              |                |                |
-              +--------+-------+--------+-------+
-                       |                |
-                  AgentRunner      SessionStore
-                  (streaming)      (in-memory)
-                       |
-              +--------+--------+
-              |                 |
-         Anthropic API    OpenAI / Ollama
-              |
-        Tool Executor
-              |
-    +---------+---------+---------+
-    |         |         |         |
-  files    shell    search    discord
-  r/w/p   exec+to   code     mgmt
-```
+500 題工具呼叫 benchmark（qwen2.5:32b、本地 Ollama）：
+
+| 版本 | 總分 | Timeout | 速度 |
+|---|---|---|---|
+| v3 baseline | 81% | 74 | 44s/題 |
+| v4 timeout fix | 85% | 3 | 36s/題 |
+| **v5 optimized** | **97%** | **0** | **38s/題** |
+
+| 類別 | v5 分數 |
+|---|---|
+| 核心操作 | 92% |
+| 基本工具 | 95% |
+| 中等任務 | **100%** |
+| 進階推理 | 98% |
+| 幻覺陷阱 | **100%** |
+| 多步驟連鎖 | 99% |
+
+> Benchmark 題目於 [AI-Bench](https://github.com/Adaimade/AI-Bench)。
 
 ---
 
-## 擴充指南
+## 🏗️ 架構
 
-### 新增工具
+```
+src/
+├── main.rs              CLI dispatch + 啟動
+├── cli/mod.rs           clap subcommands
+├── config.rs            TOML + env 設定
+├── gateway/             WebSocket server + 協定 + handshake
+├── agent/runner.rs      LLM streaming + agentic loop + 歷史壓縮
+├── channels/            Telegram (teloxide) + Discord (serenity)
+├── tools/               22 個工具：fs、shell、search、discord、email、system、github、mcp
+├── session/             MemoryManager + SQLite store + 圖譜 + embedding + 萃取
+└── cron/                排程任務（system、email、GitHub）
+```
 
-1. 在 `src/tools/` 實作你的函式
-2. 在 `src/tools/executor.rs` 的 `execute_inner()` 加入 match arm
-3. 在 `tool_definitions()` 加入 JSON Schema
-4. 完成。LLM 會自動發現並使用它。
-
-### 新增 Channel
-
-1. 建立 `src/channels/my_channel.rs`
-2. 實作一個 struct 帶 `pub async fn start(self, runner: Arc<AgentRunner>) -> Result<()>`
-3. 在 `src/config.rs` 的 `ChannelsConfig` 加入設定
-4. 在 `src/main.rs` 的 `cmd_gateway()` 中 spawn 它
-
----
-
-## Roadmap
-
-- [ ] **MCP client** — Model Context Protocol 支援外部 tool server
-- [ ] **Web UI** — 輕量瀏覽器面板，管理 session 和 log
-- [ ] **Slack channel** — Slack bot 整合
-- [ ] **LINE channel** — LINE Messaging API
-- [ ] **持久化 session** — SQLite 儲存對話歷史
-- [ ] **多 agent** — 不同 channel 使用不同 model / prompt
-- [ ] **Plugin 系統** — 透過 WASM 或 shared lib 動態載入 tool
-- [ ] **Metrics** — Prometheus `/metrics` 端點
-
-歡迎社群貢獻，開 issue 或 PR 即可。
+**30 個檔案 · 5,918 行 · 7.5 MB binary · 零外部服務**
 
 ---
 
-## License
+## 🗺️ Roadmap
 
-MIT
+| 狀態 | 功能 |
+|---|---|
+| ✅ | 工具呼叫（22 個工具 + agentic loop） |
+| ✅ | 三層記憶（向量 + 圖譜 + 混合範圍） |
+| ✅ | Telegram + Discord 通道 |
+| ✅ | MCP client（透明工具路由） |
+| ✅ | GitHub 整合（掃描 + 自動 PR） |
+| ✅ | 系統監控 + cron 告警 |
+| ✅ | Email（IMAP + SMTP） |
+| ✅ | SQLite 持久化 |
+| 🔲 | Web UI dashboard |
+| 🔲 | Slack / LINE 通道 |
+| 🔲 | RAG（文件搜尋） |
+| 🔲 | 多 agent 路由 |
+| 🔲 | WASM 外掛系統 |
+| 🔲 | Prometheus metrics |
+
+歡迎社群貢獻——開 issue 或 PR。
+
+---
+
+<div align="center">
+
+**MIT License** · v0.4.0
+
+由 [Ad Huang](https://github.com/Adaimade) 使用 [Claude Code](https://claude.ai) 創建
+
+*框架在這裡。剩下的交給社群。*
+
+</div>
