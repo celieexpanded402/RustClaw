@@ -7,7 +7,7 @@ use serenity::model::channel::Message;
 use serenity::model::gateway::Ready;
 use serenity::prelude::*;
 use tokio::sync::mpsc;
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn};
 
 use crate::agent::runner::ToolContext;
 use crate::agent::{AgentRunner, Message as AgentMessage};
@@ -55,6 +55,7 @@ impl DiscordChannel {
             runner,
             memory: self.memory,
             config: Arc::new(self.config),
+            bot_name: std::sync::RwLock::new(String::new()),
             cron_ctx,
             tools_config,
             discord_http,
@@ -77,6 +78,7 @@ struct Handler {
     runner: Arc<AgentRunner>,
     memory: MemoryManager,
     config: Arc<DiscordConfig>,
+    bot_name: std::sync::RwLock<String>,
     cron_ctx: Option<Arc<CronContext>>,
     tools_config: ToolsConfig,
     discord_http: DiscordHttp,
@@ -87,7 +89,14 @@ struct Handler {
 #[async_trait]
 impl EventHandler for Handler {
     async fn ready(&self, _ctx: Context, ready: Ready) {
-        info!(bot_name = %ready.user.name, "Discord bot connected");
+        info!(bot_name = %ready.user.name, "Discord bot connected and ready");
+        if let Ok(mut name) = self.bot_name.write() {
+            *name = ready.user.name.clone();
+        }
+    }
+
+    async fn resume(&self, _ctx: Context, _: serenity::model::event::ResumedEvent) {
+        info!("Discord gateway resumed");
     }
 
     async fn message(&self, ctx: Context, msg: Message) {
@@ -95,10 +104,18 @@ impl EventHandler for Handler {
             return;
         }
 
+        debug!(
+            author = %msg.author.name,
+            content = %msg.content.chars().take(80).collect::<String>(),
+            channel = %msg.channel_id,
+            "Discord message received"
+        );
+
         // Guild ACL
         if !self.config.allowed_guild_ids.is_empty() {
             if let Some(guild_id) = msg.guild_id {
                 if !self.config.allowed_guild_ids.contains(&guild_id.get()) {
+                    debug!("Dropped: guild not in allowed list");
                     return;
                 }
             }
@@ -107,14 +124,23 @@ impl EventHandler for Handler {
         let is_dm = msg.guild_id.is_none();
         let is_mentioned = msg.mentions_me(&ctx.http).await.unwrap_or(false);
 
-        if self.config.mention_only && !is_dm && !is_mentioned {
+        // Also match bot name as plain text (handles copy-pasted @mentions)
+        let bot_name = self.bot_name.read().map(|n| n.clone()).unwrap_or_default();
+        let text_mentioned = !bot_name.is_empty()
+            && msg.content.to_lowercase().contains(&format!("@{}", bot_name.to_lowercase()));
+
+        if self.config.mention_only && !is_dm && !is_mentioned && !text_mentioned {
+            debug!(content = %msg.content.chars().take(40).collect::<String>(), "Dropped: not mentioned");
             return;
         }
 
         let text = strip_mention(&msg.content, &ctx).await;
         if text.trim().is_empty() {
+            debug!("Dropped: empty after stripping mention");
             return;
         }
+
+        info!(user = %msg.author.name, text = %text.chars().take(60).collect::<String>(), "Processing Discord message");
 
         // ── Check for bot commands ───────────────────────────────────
         let trimmed = text.trim();

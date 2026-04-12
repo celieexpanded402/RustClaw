@@ -645,10 +645,15 @@ fn strip_text_tool_calls(s: &str) -> String {
 
 fn truncate_msg(s: &str, max: usize) -> String {
     if s.len() <= max {
-        s.to_string()
-    } else {
-        format!("{}...", &s[..max])
+        return s.to_string();
     }
+    // Find a safe char boundary at or before `max`
+    let end = s.char_indices()
+        .take_while(|(i, _)| *i <= max)
+        .last()
+        .map(|(i, _)| i)
+        .unwrap_or(0);
+    format!("{}...", &s[..end])
 }
 
 fn openai_tool_definitions(mcp: &Option<Arc<McpManager>>) -> serde_json::Value {
