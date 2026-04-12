@@ -35,9 +35,20 @@ async fn health() -> &'static str {
 pub async fn run_with_memory(config: AppConfig, memory: MemoryManager) -> anyhow::Result<()> {
     let listen = config.gateway.listen_addr();
 
-    match &config.gateway.token {
-        Some(t) if !t.is_empty() => info!("Gateway authentication enabled"),
-        _ => tracing::warn!("Gateway has NO authentication token — any client can connect. Set [gateway] token in config for production use."),
+    let is_localhost = config.gateway.bind == "127.0.0.1" || config.gateway.bind == "localhost";
+    let has_token = matches!(&config.gateway.token, Some(t) if !t.is_empty());
+
+    match (is_localhost, has_token) {
+        (_, true) => info!("Gateway authentication enabled"),
+        (true, false) => tracing::warn!("Gateway has no auth token (localhost only — acceptable for development)"),
+        (false, false) => {
+            anyhow::bail!(
+                "REFUSED: Gateway binds to {} (non-localhost) without an auth token. \
+                 This would expose your agent to the public internet without authentication. \
+                 Set [gateway] token in ~/.rustclaw/config.toml, or bind to 127.0.0.1 for local use.",
+                config.gateway.bind
+            );
+        }
     }
 
     let agent = AgentRunner::new(config.agent.clone());

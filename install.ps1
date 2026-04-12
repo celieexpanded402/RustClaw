@@ -32,6 +32,25 @@ $TmpDir = New-TemporaryFile | ForEach-Object { Remove-Item $_; New-Item -ItemTyp
 $ZipPath = Join-Path $TmpDir "rustclaw.zip"
 Invoke-WebRequest -Uri $DownloadUrl -OutFile $ZipPath
 
+# SHA256 checksum verification
+$ChecksumAsset = $Release.assets | Where-Object { $_.name -eq "checksums.txt" } | Select-Object -First 1
+if ($ChecksumAsset) {
+    $ChecksumUrl = $ChecksumAsset.browser_download_url
+    $ChecksumFile = Join-Path $TmpDir "checksums.txt"
+    Invoke-WebRequest -Uri $ChecksumUrl -OutFile $ChecksumFile
+    $Expected = (Get-Content $ChecksumFile | Where-Object { $_ -like "*$Target*" }) -split '\s+' | Select-Object -First 1
+    if ($Expected) {
+        $Actual = (Get-FileHash -Path $ZipPath -Algorithm SHA256).Hash.ToLower()
+        if ($Actual -ne $Expected) {
+            Write-Host "  ERROR: Checksum verification failed!" -ForegroundColor Red
+            Write-Host "    Expected: $Expected" -ForegroundColor Red
+            Write-Host "    Got:      $Actual" -ForegroundColor Red
+            exit 1
+        }
+        Write-Host "  Checksum verified" -ForegroundColor Green
+    }
+}
+
 Expand-Archive -Path $ZipPath -DestinationPath $TmpDir -Force
 
 # Install binary

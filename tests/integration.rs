@@ -96,6 +96,147 @@ mod exec_tools {
     }
 }
 
+mod agent_loop {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::Arc;
+
+    use axum::{extract::State, routing::post, Json, Router};
+    use serde_json::json;
+
+    struct MockState {
+        call_count: AtomicUsize,
+    }
+
+    async fn mock_openai_chat(
+        State(state): State<Arc<MockState>>,
+        Json(_body): Json<serde_json::Value>,
+    ) -> Json<serde_json::Value> {
+        let n = state.call_count.fetch_add(1, Ordering::SeqCst);
+
+        if n == 0 {
+            // First call: return a tool_call for list_dir
+            Json(json!({
+                "choices": [{
+                    "message": {
+                        "content": null,
+                        "tool_calls": [{
+                            "id": "call_1",
+                            "type": "function",
+                            "function": {
+                                "name": "list_dir",
+                                "arguments": "{\"path\":\"/tmp\",\"depth\":1}"
+                            }
+                        }]
+                    },
+                    "finish_reason": "tool_calls"
+                }]
+            }))
+        } else {
+            // Second call: return final text
+            Json(json!({
+                "choices": [{
+                    "message": {
+                        "content": "Here are the files in /tmp.",
+                        "tool_calls": []
+                    },
+                    "finish_reason": "stop"
+                }]
+            }))
+        }
+    }
+
+    async fn start_mock_server() -> (String, tokio::task::JoinHandle<()>) {
+        let state = Arc::new(MockState {
+            call_count: AtomicUsize::new(0),
+        });
+
+        let app = Router::new()
+            .route("/v1/chat/completions", post(mock_openai_chat))
+            .with_state(state);
+
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let handle = tokio::spawn(async move {
+            axum::serve(listener, app).await.unwrap();
+        });
+
+        (format!("http://127.0.0.1:{}", addr.port()), handle)
+    }
+
+    #[tokio::test]
+    async fn agentic_loop_dispatches_tool_and_returns_text() {
+        let (base_url, _handle) = start_mock_server().await;
+
+        let config = rustclaw::config::AgentConfig {
+            provider: "openai".into(),
+            api_key: "test".into(),
+            base_url,
+            model: "mock".into(),
+            system_prompt: String::new(),
+        };
+
+        let tc = rustclaw::agent::ToolContext {
+            config: rustclaw::config::ToolsConfig {
+                enabled: true,
+                workspace_dir: "/tmp".into(),
+                allow_exec: false,
+                exec_timeout_secs: 5,
+            },
+            discord_http: None,
+            email_config: None,
+            mcp: None,
+        };
+
+        let runner = rustclaw::agent::AgentRunner::new(config);
+        let mut tokens = Vec::new();
+        let result = runner
+            .run_agentic("list files in /tmp", &[], &tc, |t| tokens.push(t))
+            .await
+            .unwrap();
+
+        assert!(result.contains("Here are the files"));
+        assert!(!tokens.is_empty());
+    }
+
+    #[tokio::test]
+    async fn agentic_loop_text_only_no_tool_call() {
+        let state = Arc::new(MockState {
+            call_count: AtomicUsize::new(1), // skip to "return text" mode
+        });
+
+        let app = Router::new()
+            .route("/v1/chat/completions", post(mock_openai_chat))
+            .with_state(state);
+
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+
+        let config = rustclaw::config::AgentConfig {
+            provider: "openai".into(),
+            api_key: "test".into(),
+            base_url: format!("http://127.0.0.1:{}", addr.port()),
+            model: "mock".into(),
+            system_prompt: String::new(),
+        };
+
+        let tc = rustclaw::agent::ToolContext {
+            config: rustclaw::config::ToolsConfig::default(),
+            discord_http: None,
+            email_config: None,
+            mcp: None,
+        };
+
+        let runner = rustclaw::agent::AgentRunner::new(config);
+        let result = runner
+            .run_agentic("hello", &[], &tc, |_| {})
+            .await
+            .unwrap();
+
+        assert_eq!(result, "Here are the files in /tmp.");
+    }
+}
+
 mod config {
     #[test]
     fn config_loads_defaults() {
