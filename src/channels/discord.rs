@@ -133,12 +133,21 @@ impl EventHandler for Handler {
 
         self.memory.get_or_create(&session_id).await;
         let history = self.memory.get_history(&session_id).await;
+        let recalled = self.memory.recall(&session_id, trimmed).await;
 
         let now = chrono::Local::now().format("%Y-%m-%d %H:%M:%S %Z");
-        let input = if history.is_empty() {
-            format!("[Current time: {now}]\n\n{trimmed}")
-        } else {
+        let mut context_parts = Vec::new();
+        if history.is_empty() {
+            context_parts.push(format!("[Current time: {now}]"));
+        }
+        if !recalled.is_empty() {
+            context_parts.push(format!("[Memory]\n{recalled}"));
+        }
+        let input = if context_parts.is_empty() {
             trimmed.to_string()
+        } else {
+            context_parts.push(trimmed.to_string());
+            context_parts.join("\n\n")
         };
 
         self.memory
@@ -228,10 +237,11 @@ impl EventHandler for Handler {
                 &session_id,
                 AgentMessage {
                     role: "assistant".to_string(),
-                    content: full,
+                    content: full.clone(),
                 },
             )
             .await;
+        self.memory.learn(&session_id, trimmed, &full).await;
     }
 }
 

@@ -132,9 +132,15 @@ async fn handle_agent(
     // ACK
     send(socket, OutboundFrame::agent_ack(&req.id, &run_id)).await;
 
-    // Get session history and stream response
+    // Get session history + recall long-term memories
     let history = state.memory.get_history(session_id).await;
-    let mut rx = state.agent.chat_stream(&params.input, &history).await;
+    let recalled = state.memory.recall(session_id, &params.input).await;
+    let input_with_memory = if recalled.is_empty() {
+        params.input.clone()
+    } else {
+        format!("[Memory]\n{recalled}\n\n{}", params.input)
+    };
+    let mut rx = state.agent.chat_stream(&input_with_memory, &history).await;
 
     // Record user message
     state

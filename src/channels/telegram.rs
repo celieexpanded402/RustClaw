@@ -96,16 +96,21 @@ async fn handle_message(
     memory.get_or_create(&session_id).await;
 
     let history = memory.get_history(&session_id).await;
+    let recalled = memory.recall(&session_id, text).await;
 
-    // Build system prompt with current time
     let now = chrono::Local::now().format("%Y-%m-%d %H:%M:%S %Z");
-    let system_note = format!("Current time: {now}");
-
-    // Prepend time context to user input
-    let input_with_context = if history.is_empty() {
-        format!("[{system_note}]\n\n{text}")
-    } else {
+    let mut context_parts = Vec::new();
+    if history.is_empty() {
+        context_parts.push(format!("[Current time: {now}]"));
+    }
+    if !recalled.is_empty() {
+        context_parts.push(format!("[Memory]\n{recalled}"));
+    }
+    let input_with_context = if context_parts.is_empty() {
         text.to_string()
+    } else {
+        context_parts.push(text.to_string());
+        context_parts.join("\n\n")
     };
 
     // Record user message
@@ -189,16 +194,17 @@ async fn stream_with_edit(
     }
     retry_edit(bot, chat_id, msg_id, &full).await;
 
-    // Record assistant message
+    // Record assistant message + learn long-term memories
     memory
         .push_message(
             session_id,
             AgentMessage {
                 role: "assistant".to_string(),
-                content: full,
+                content: full.clone(),
             },
         )
         .await;
+    memory.learn(session_id, input, &full).await;
 
     Ok(())
 }
@@ -233,10 +239,11 @@ async fn send_oneshot(
             session_id,
             AgentMessage {
                 role: "assistant".to_string(),
-                content: response,
+                content: response.clone(),
             },
         )
         .await;
+    memory.learn(session_id, input, &response).await;
 
     Ok(())
 }
