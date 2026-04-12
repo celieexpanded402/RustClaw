@@ -174,8 +174,11 @@ impl AgentRunner {
                 match block.get("type").and_then(|v| v.as_str()) {
                     Some("text") => {
                         if let Some(t) = block.get("text").and_then(|v| v.as_str()) {
-                            text_parts.push_str(t);
-                            on_token(t.to_string());
+                            let clean = strip_text_tool_calls(t);
+                            if !clean.is_empty() {
+                                text_parts.push_str(&clean);
+                                on_token(clean);
+                            }
                         }
                     }
                     Some("tool_use") => {
@@ -306,11 +309,12 @@ impl AgentRunner {
 
             let message = choice.get("message").cloned().unwrap_or(serde_json::json!({}));
 
-            // Extract text content
+            // Extract text content (filter out text-mode tool call artifacts)
             if let Some(content) = message.get("content").and_then(|v| v.as_str()) {
-                if !content.is_empty() {
-                    full_response.push_str(content);
-                    on_token(content.to_string());
+                let clean = strip_text_tool_calls(content);
+                if !clean.is_empty() {
+                    full_response.push_str(&clean);
+                    on_token(clean);
                 }
             }
 
@@ -614,6 +618,31 @@ fn compress_history(history: &[Message]) -> Vec<Message> {
 }
 
 
+/// Strip text-mode tool call artifacts that some models output instead of using native tool_calls.
+/// Removes patterns like <function=...>...</function>, </tool_call>, Action: call ..., etc.
+fn strip_text_tool_calls(s: &str) -> String {
+    let mut result = s.to_string();
+    // Remove <function=name>...</function> blocks
+    while let Some(start) = result.find("<function=") {
+        if let Some(end) = result[start..].find("</function>") {
+            let remove_end = start + end + "</function>".len();
+            // Also remove trailing </tool_call> if present
+            let after = &result[remove_end..];
+            let extra = if after.trim_start().starts_with("</tool_call>") {
+                after.find("</tool_call>").unwrap() + "</tool_call>".len()
+            } else {
+                0
+            };
+            result = format!("{}{}", &result[..start], &result[remove_end + extra..]);
+        } else {
+            // Unclosed tag — remove from <function= to end
+            result = result[..start].to_string();
+            break;
+        }
+    }
+    result.trim().to_string()
+}
+
 fn truncate_msg(s: &str, max: usize) -> String {
     if s.len() <= max {
         s.to_string()
@@ -648,6 +677,24 @@ fn openai_tool_definitions(mcp: &Option<Arc<McpManager>>) -> serde_json::Value {
 mod tests {
     use super::*;
     use crate::config::AgentConfig;
+
+    #[test]
+    fn strip_function_tags() {
+        let input = "Here are the results.\n\n<function=docker_status>\n</function>\n</tool_call>";
+        assert_eq!(strip_text_tool_calls(input), "Here are the results.");
+    }
+
+    #[test]
+    fn strip_preserves_clean_text() {
+        let input = "Hello, this is a normal response.";
+        assert_eq!(strip_text_tool_calls(input), input);
+    }
+
+    #[test]
+    fn strip_unclosed_function_tag() {
+        let input = "Some text\n<function=run_command";
+        assert_eq!(strip_text_tool_calls(input), "Some text");
+    }
 
     #[tokio::test]
     #[ignore]
