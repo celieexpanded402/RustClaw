@@ -105,7 +105,14 @@ async fn cmd_gateway(cfg: AppConfig) -> anyhow::Result<()> {
     if cfg.channels.telegram.enabled {
         info!("Starting Telegram channel");
         let tg = TelegramChannel::new(cfg.channels.telegram.clone(), memory.clone());
-        let tg_runner = Arc::clone(&runner);
+        let tg_runner = if !cfg.channels.telegram.model.is_empty() {
+            let mut agent_cfg = cfg.agent.clone();
+            agent_cfg.model = cfg.channels.telegram.model.clone();
+            info!(model = %agent_cfg.model, "Telegram using channel-specific model");
+            Arc::new(AgentRunner::new(agent_cfg))
+        } else {
+            Arc::clone(&runner)
+        };
         tokio::spawn(async move {
             if let Err(e) = tg.start(tg_runner).await {
                 tracing::error!(%e, "Telegram channel exited with error");
@@ -117,7 +124,14 @@ async fn cmd_gateway(cfg: AppConfig) -> anyhow::Result<()> {
     if cfg.channels.discord.enabled {
         info!("Starting Discord channel");
         let dc = DiscordChannel::new(cfg.channels.discord.clone(), memory.clone());
-        let dc_runner = Arc::clone(&runner);
+        let dc_runner = if !cfg.channels.discord.model.is_empty() {
+            let mut agent_cfg = cfg.agent.clone();
+            agent_cfg.model = cfg.channels.discord.model.clone();
+            info!(model = %agent_cfg.model, "Discord using channel-specific model");
+            Arc::new(AgentRunner::new(agent_cfg))
+        } else {
+            Arc::clone(&runner)
+        };
         let dc_cron = if cron_ctx.github.is_some() {
             Some(Arc::clone(&cron_ctx))
         } else {

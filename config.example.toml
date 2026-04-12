@@ -18,12 +18,14 @@ enabled = false
 bot_token = ""
 allowed_user_ids = []   # Empty = allow all users
 stream_edit = true      # Edit message in-place to simulate streaming
+model = ""              # Channel-specific model override (empty = use [agent] model)
 
 [channels.discord]
 enabled = false
 bot_token = ""
 allowed_guild_ids = []  # Empty = all servers
 mention_only = true     # Only respond to @mentions and DMs
+model = ""              # Channel-specific model override (empty = use [agent] model)
 
 [github]
 token = ""                          # GitHub Personal Access Token

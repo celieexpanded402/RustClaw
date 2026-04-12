@@ -94,6 +94,8 @@ pub struct DiscordConfig {
     pub allowed_guild_ids: Vec<u64>,
     #[serde(default = "default_true")]
     pub mention_only: bool,
+    #[serde(default)]
+    pub model: String,
 }
 
 impl Default for DiscordConfig {
@@ -103,6 +105,7 @@ impl Default for DiscordConfig {
             bot_token: String::new(),
             allowed_guild_ids: Vec::new(),
             mention_only: true,
+            model: String::new(),
         }
     }
 }
@@ -117,6 +120,8 @@ pub struct TelegramConfig {
     pub allowed_user_ids: Vec<u64>,
     #[serde(default = "default_true")]
     pub stream_edit: bool,
+    #[serde(default)]
+    pub model: String,
 }
 
 impl Default for TelegramConfig {
@@ -126,6 +131,7 @@ impl Default for TelegramConfig {
             bot_token: String::new(),
             allowed_user_ids: Vec::new(),
             stream_edit: true,
+            model: String::new(),
         }
     }
 }
