@@ -97,6 +97,22 @@ impl McpConnection {
         resp.result
             .ok_or_else(|| anyhow::anyhow!("MCP response has no result"))
     }
+
+    async fn send_notification(&mut self, method: &str) -> Result<()> {
+        let req = JsonRpcRequest {
+            jsonrpc: "2.0",
+            id: self.next_id,
+            method: method.to_string(),
+            params: None,
+        };
+        self.next_id += 1;
+
+        let mut line = serde_json::to_string(&req)?;
+        line.push('\n');
+        self.stdin.write_all(line.as_bytes()).await?;
+        self.stdin.flush().await?;
+        Ok(())
+    }
 }
 
 // ── MCP Client Manager ──────────────────────────────────────────────
@@ -203,10 +219,8 @@ impl McpManager {
             .await
             .context("MCP initialize failed")?;
 
-        // Send initialized notification (no response expected, but send as request for simplicity)
-        let _ = conn
-            .send_request("notifications/initialized", None)
-            .await;
+        // Send initialized notification (no response expected)
+        conn.send_notification("notifications/initialized").await?;
 
         // Discover tools
         let tools_result = conn
