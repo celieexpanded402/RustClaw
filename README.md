@@ -250,7 +250,7 @@ Tested on **[T-Eval](https://github.com/open-compass/T-Eval)** — Shanghai AI L
 
 ### Internal Benchmark
 
-500-question tool calling benchmark (qwen2.5:32b, local Ollama):
+500-question tool calling benchmark (qwen2.5:32b, local Ollama). Not yet re-tested on qwen3-coder:30b:
 
 | Version | Total | Timeout | Speed |
 |---|---|---|---|

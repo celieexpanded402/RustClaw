@@ -34,6 +34,12 @@ async fn health() -> &'static str {
 
 pub async fn run_with_memory(config: AppConfig, memory: MemoryManager) -> anyhow::Result<()> {
     let listen = config.gateway.listen_addr();
+
+    match &config.gateway.token {
+        Some(t) if !t.is_empty() => info!("Gateway authentication enabled"),
+        _ => tracing::warn!("Gateway has NO authentication token — any client can connect. Set [gateway] token in config for production use."),
+    }
+
     let agent = AgentRunner::new(config.agent.clone());
 
     let state = Arc::new(AppState {

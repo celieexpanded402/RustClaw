@@ -2193,6 +2193,7 @@ dependencies = [
  "serde_json",
  "serenity",
  "teloxide",
+ "tempfile",
  "tokio",
  "tokio-cron-scheduler",
  "tokio-stream",

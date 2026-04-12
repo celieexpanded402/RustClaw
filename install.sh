@@ -52,9 +52,31 @@ fi
 
 echo "Downloading: $LATEST"
 
-# Download and extract
+# Download and verify
 TMPDIR=$(mktemp -d)
 curl -sL "$LATEST" -o "$TMPDIR/rustclaw.tar.gz"
+
+# SHA256 checksum verification
+CHECKSUM_URL=$(echo "$RELEASE_JSON" | grep "browser_download_url.*sha256" | head -1 | cut -d '"' -f 4)
+if [ -n "$CHECKSUM_URL" ]; then
+    curl -sL "$CHECKSUM_URL" -o "$TMPDIR/checksums.txt"
+    EXPECTED=$(grep "$TARGET.tar.gz" "$TMPDIR/checksums.txt" | awk '{print $1}')
+    if [ -n "$EXPECTED" ]; then
+        if command -v sha256sum >/dev/null 2>&1; then
+            ACTUAL=$(sha256sum "$TMPDIR/rustclaw.tar.gz" | awk '{print $1}')
+        else
+            ACTUAL=$(shasum -a 256 "$TMPDIR/rustclaw.tar.gz" | awk '{print $1}')
+        fi
+        if [ "$ACTUAL" != "$EXPECTED" ]; then
+            echo "ERROR: Checksum verification failed!"
+            echo "  Expected: $EXPECTED"
+            echo "  Got:      $ACTUAL"
+            exit 1
+        fi
+        echo "[OK] Checksum verified"
+    fi
+fi
+
 tar xzf "$TMPDIR/rustclaw.tar.gz" -C "$TMPDIR"
 
 # Find and install binary
