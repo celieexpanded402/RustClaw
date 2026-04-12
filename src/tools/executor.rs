@@ -309,6 +309,93 @@ fn arg_u64(args: &serde_json::Value, key: &str) -> Result<u64> {
         .ok_or_else(|| anyhow::anyhow!("Missing or invalid argument: {key}"))
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn dangerous_patterns_block_rm_rf_root() {
+        let cmd = "rm -rf /";
+        assert!(DANGEROUS_PATTERNS.iter().any(|p| cmd.contains(p)));
+    }
+
+    #[test]
+    fn dangerous_patterns_block_fork_bomb() {
+        let cmd = ":(){ :|:& };:";
+        assert!(DANGEROUS_PATTERNS.iter().any(|p| cmd.contains(p)));
+    }
+
+    #[test]
+    fn dangerous_patterns_block_drop_database() {
+        let cmd = "mysql -e 'DROP DATABASE production'";
+        assert!(DANGEROUS_PATTERNS.iter().any(|p| cmd.contains(p)));
+    }
+
+    #[test]
+    fn dangerous_patterns_allow_safe_rm() {
+        let cmd = "rm file.txt";
+        assert!(!DANGEROUS_PATTERNS.iter().any(|p| cmd.contains(p)));
+    }
+
+    #[test]
+    fn dangerous_patterns_allow_safe_commands() {
+        for cmd in &["ls -la", "cat README.md", "cargo build", "git status"] {
+            assert!(!DANGEROUS_PATTERNS.iter().any(|p| cmd.contains(p)), "falsely blocked: {cmd}");
+        }
+    }
+
+    #[test]
+    fn truncate_short_string_unchanged() {
+        let s = "hello world";
+        assert_eq!(truncate_result(s), s);
+    }
+
+    #[test]
+    fn truncate_long_string() {
+        let s = "a".repeat(5000);
+        let result = truncate_result(&s);
+        assert!(result.contains("truncated"));
+        assert!(result.contains("4000/5000"));
+    }
+
+    #[test]
+    fn truncate_at_boundary() {
+        let s = "a".repeat(4000);
+        assert_eq!(truncate_result(&s), s);
+    }
+
+    #[test]
+    fn arg_str_extracts_value() {
+        let args = json!({"path": "/tmp/file.txt"});
+        assert_eq!(arg_str(&args, "path").unwrap(), "/tmp/file.txt");
+    }
+
+    #[test]
+    fn arg_str_missing_key_errors() {
+        let args = json!({"other": "value"});
+        assert!(arg_str(&args, "path").is_err());
+    }
+
+    #[test]
+    fn arg_u64_from_number() {
+        let args = json!({"id": 42});
+        assert_eq!(arg_u64(&args, "id").unwrap(), 42);
+    }
+
+    #[test]
+    fn arg_u64_from_string() {
+        let args = json!({"id": "123"});
+        assert_eq!(arg_u64(&args, "id").unwrap(), 123);
+    }
+
+    #[test]
+    fn arg_u64_invalid_errors() {
+        let args = json!({"id": "not_a_number"});
+        assert!(arg_u64(&args, "id").is_err());
+    }
+}
+
 /// All tool definitions: local + MCP. This is what gets sent to the LLM.
 pub fn all_tool_definitions(mcp: &Option<Arc<McpManager>>) -> serde_json::Value {
     let mut local = tool_definitions();

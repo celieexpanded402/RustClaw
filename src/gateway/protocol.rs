@@ -199,3 +199,73 @@ impl OutboundFrame {
         serde_json::to_string(self).expect("OutboundFrame serialization cannot fail")
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn connect_challenge_has_nonce() {
+        let frame = OutboundFrame::connect_challenge("abc123", 1000);
+        let json = frame.to_json();
+        assert!(json.contains("abc123"));
+        assert!(json.contains("1000"));
+        assert!(json.contains("connect.challenge"));
+    }
+
+    #[test]
+    fn hello_ok_has_device_token() {
+        let frame = OutboundFrame::hello_ok("tok_xyz");
+        let json = frame.to_json();
+        assert!(json.contains("tok_xyz"));
+        assert!(json.contains("hello"));
+    }
+
+    #[test]
+    fn agent_delta_not_done() {
+        let frame = OutboundFrame::agent_event_delta("run1", "Hello");
+        let json = frame.to_json();
+        assert!(json.contains("Hello"));
+        assert!(json.contains("\"done\":false"));
+    }
+
+    #[test]
+    fn agent_done_is_true() {
+        let frame = OutboundFrame::agent_event_done("run1");
+        let json = frame.to_json();
+        assert!(json.contains("\"done\":true"));
+        assert!(!json.contains("delta"));
+    }
+
+    #[test]
+    fn error_frame_has_code_and_message() {
+        let frame = OutboundFrame::error(401, "Unauthorized");
+        let json = frame.to_json();
+        assert!(json.contains("401"));
+        assert!(json.contains("Unauthorized"));
+        assert!(json.contains("error"));
+    }
+
+    #[test]
+    fn error_with_id_includes_request_id() {
+        let frame = OutboundFrame::error_with_id("req_42", 500, "Internal error");
+        let json = frame.to_json();
+        assert!(json.contains("req_42"));
+        assert!(json.contains("500"));
+    }
+
+    #[test]
+    fn res_ok_has_payload() {
+        let frame = OutboundFrame::res_ok("req_1", serde_json::json!({"result": "done"}));
+        let json = frame.to_json();
+        assert!(json.contains("req_1"));
+        assert!(json.contains("done"));
+        assert!(json.contains("\"status\":\"ok\""));
+    }
+
+    #[test]
+    fn to_json_never_panics() {
+        let frame = OutboundFrame::empty();
+        let _ = frame.to_json();
+    }
+}

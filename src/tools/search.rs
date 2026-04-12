@@ -112,3 +112,36 @@ fn is_binary_extension(path: &Path) -> bool {
             | "wasm" | "pyc" | "class"
     )
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::Path;
+
+    #[test]
+    fn binary_extensions_detected() {
+        for ext in &["png", "jpg", "zip", "exe", "pdf", "mp4", "wasm"] {
+            let name = format!("file.{ext}");
+            assert!(is_binary_extension(Path::new(&name)), "{ext} should be binary");
+        }
+    }
+
+    #[test]
+    fn text_extensions_not_binary() {
+        for ext in &["rs", "txt", "js", "py", "toml", "md", "html", "css"] {
+            let name = format!("file.{ext}");
+            assert!(!is_binary_extension(Path::new(&name)), "{ext} should not be binary");
+        }
+    }
+
+    #[test]
+    fn no_extension_not_binary() {
+        assert!(!is_binary_extension(Path::new("Makefile")));
+    }
+
+    #[test]
+    fn case_insensitive() {
+        assert!(is_binary_extension(Path::new("image.PNG")));
+        assert!(is_binary_extension(Path::new("archive.ZIP")));
+    }
+}

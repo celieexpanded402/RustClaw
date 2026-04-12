@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libssl-dev pkg-config
+
+      - name: Check
+        run: cargo check
+
+      - name: Test
+        run: cargo test
+
+      - name: Build (release)
+        run: cargo build --release
+
+      - name: Check warnings
+        run: |
+          WARNINGS=$(cargo build --release 2>&1 | grep "^warning:" | grep -v "imap-proto" | wc -l)
+          if [ "$WARNINGS" -gt 0 ]; then
+            echo "::error::Found $WARNINGS compiler warnings"
+            cargo build --release 2>&1 | grep "^warning:" | grep -v "imap-proto"
+            exit 1
+          fi
+          echo "Zero warnings build confirmed"

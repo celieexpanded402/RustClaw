@@ -120,3 +120,29 @@ fn extract_user_scope(session_id: &str) -> String {
         _ => format!("user:{session_id}"),  // gateway UUID
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn scope_discord_extracts_user() {
+        assert_eq!(extract_user_scope("discord:12345:67890"), "user:67890");
+    }
+
+    #[test]
+    fn scope_telegram_extracts_user() {
+        assert_eq!(extract_user_scope("telegram:12345"), "user:12345");
+    }
+
+    #[test]
+    fn scope_gateway_uuid_wraps() {
+        let uuid = "a1b2c3d4-e5f6-7890";
+        assert_eq!(extract_user_scope(uuid), format!("user:{uuid}"));
+    }
+
+    #[test]
+    fn scope_empty_string() {
+        assert_eq!(extract_user_scope(""), "user:");
+    }
+}

@@ -317,6 +317,68 @@ fn dirs_path() -> PathBuf {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn default_port() {
+        let cfg = GatewayConfig::default();
+        assert_eq!(cfg.port, 18789);
+    }
+
+    #[test]
+    fn default_bind() {
+        let cfg = GatewayConfig::default();
+        assert_eq!(cfg.bind, "0.0.0.0");
+    }
+
+    #[test]
+    fn listen_addr_formats_correctly() {
+        let cfg = GatewayConfig { port: 8080, bind: "127.0.0.1".into(), token: None };
+        assert_eq!(cfg.listen_addr(), "127.0.0.1:8080");
+    }
+
+    #[test]
+    fn default_provider_is_anthropic() {
+        let cfg = AgentConfig::default();
+        assert_eq!(cfg.provider, "anthropic");
+    }
+
+    #[test]
+    fn discord_channel_id_valid() {
+        let cfg = GitHubConfig { notify_discord_channel: "123456789".into(), ..Default::default() };
+        assert_eq!(cfg.notify_discord_channel_id(), Some(123456789));
+    }
+
+    #[test]
+    fn discord_channel_id_empty() {
+        let cfg = GitHubConfig { notify_discord_channel: "".into(), ..Default::default() };
+        assert_eq!(cfg.notify_discord_channel_id(), None);
+    }
+
+    #[test]
+    fn discord_channel_id_invalid() {
+        let cfg = GitHubConfig { notify_discord_channel: "not_a_number".into(), ..Default::default() };
+        assert_eq!(cfg.notify_discord_channel_id(), None);
+    }
+
+    #[test]
+    fn telegram_defaults() {
+        let cfg = TelegramConfig::default();
+        assert!(!cfg.enabled);
+        assert!(cfg.stream_edit);
+        assert!(cfg.allowed_user_ids.is_empty());
+    }
+
+    #[test]
+    fn discord_defaults() {
+        let cfg = DiscordConfig::default();
+        assert!(!cfg.enabled);
+        assert!(cfg.mention_only);
+    }
+}
+
 impl AppConfig {
     pub fn load(cli_path: Option<&str>) -> anyhow::Result<Self> {
         let path = resolve_config_path(cli_path);
