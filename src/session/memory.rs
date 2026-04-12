@@ -6,6 +6,7 @@ use tracing::{info, warn};
 use crate::agent::Message;
 use crate::session::store::SessionStore;
 
+#[allow(dead_code)]
 const GLOBAL_SCOPE: &str = "global:system";
 
 /// Manages short-term history (SessionStore) + long-term memory (rustmem).
@@ -64,7 +65,7 @@ impl MemoryManager {
 
     // ── Mixed-mode recall (local + user + global) ────────────────────
 
-    /// Search for memories across three scopes, returns formatted context string.
+    #[allow(dead_code)]
     pub async fn recall(&self, session_id: &str, query: &str) -> String {
         let user_scope = extract_user_scope(session_id);
         let scopes = [session_id, &user_scope, GLOBAL_SCOPE];
@@ -96,7 +97,7 @@ impl MemoryManager {
     pub async fn learn(&self, session_id: &str, user_text: &str, _assistant_text: &str) {
         let rmem = Arc::clone(&self.rmem);
         let user_scope = extract_user_scope(session_id);
-        let local_scope = session_id.to_string();
+        let _local_scope = session_id.to_string();
         let text = user_text.to_string();
 
         tokio::spawn(async move {

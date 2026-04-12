@@ -130,6 +130,7 @@ impl GitHubClient {
         Ok(page.items)
     }
 
+    #[allow(dead_code)]
     pub async fn get_file_content(
         &self,
         repo: &str,

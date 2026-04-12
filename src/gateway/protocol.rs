@@ -21,6 +21,7 @@ pub struct ConnectRequest {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
 pub struct ConnectParams {
     #[serde(default)]
     pub auth: Option<AuthParam>,
@@ -39,6 +40,7 @@ pub struct AuthParam {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct AuthResponse {
     pub nonce: String,
     pub token: String,
@@ -55,6 +57,7 @@ pub struct ReqFrame {
 // ── Req params ───────────────────────────────────────────────────────
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct AgentParams {
     pub input: String,
     #[serde(default)]
@@ -62,6 +65,7 @@ pub struct AgentParams {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct SendParams {
     pub channel: String,
     pub to: String,

@@ -156,6 +156,7 @@ pub struct CronConfig {
     #[serde(default = "default_github_scan_cron")]
     pub github_scan: String,
     #[serde(default)]
+    #[allow(dead_code)]
     pub auto_pr: bool,
     #[serde(default = "default_system_check_cron")]
     pub system_check: String,

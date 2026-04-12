@@ -1,18 +1,8 @@
 use anyhow::{Context, Result};
-use serde::Serialize;
 
 use super::exec;
 
 // ── Process monitoring ───────────────────────────────────────────────
-
-#[derive(Debug, Serialize)]
-pub struct ProcessInfo {
-    pub pid: String,
-    pub name: String,
-    pub cpu: String,
-    pub mem: String,
-    pub status: String,
-}
 
 /// List all running processes (summary).
 pub async fn process_list() -> Result<String> {
