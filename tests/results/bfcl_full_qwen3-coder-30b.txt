@@ -1,0 +1,23 @@
+=== Gorilla BFCL — Full Results ===
+Model: qwen3-coder:30b (Ollama local, MoE architecture)
+Hardware: Mac Mini 2024, Apple M4 Pro, 64 GB unified memory
+Date: 2026-04-12
+
+simple_python:     400/400  (100%)    1.5s/q
+multiple:          194/200  (97%)     2.4s/q
+parallel:          199/200  (99.5%)   2.9s/q
+parallel_multiple: 196/200  (98%)     3.4s/q
+
+Total: 989/1000 (98.9%)  avg 2.6s/q
+
+=== vs qwen2.5:32b (tested 2026-04-10) ===
+
+                   qwen2.5:32b    qwen3-coder:30b    Speed diff
+simple_python:     399/400 99.75%  400/400 100%       4.9x faster
+multiple:          199/200 99.5%   194/200 97%        3.5x faster
+parallel:          200/200 100%    199/200 99.5%      4.1x faster
+parallel_multiple: 200/200 100%    196/200 98%        4.6x faster
+Overall:           998/1000 99.7%  989/1000 98.9%     ~4.3x faster
+
+Tradeoff: -0.8% accuracy, +4.3x speed.
+Decision: qwen3-coder:30b set as default on 2026-04-12.
