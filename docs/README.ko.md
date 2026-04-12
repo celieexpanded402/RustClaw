@@ -11,7 +11,7 @@
 [![Rust](https://img.shields.io/badge/Rust-1.85+-orange.svg)](https://www.rust-lang.org/)
 [![Built with Claude Code](https://img.shields.io/badge/Built%20with-Claude%20Code-blueviolet)](https://claude.ai)
 
-**7.5 MB 바이너리** · **14 MB 메모리** · **5,296 라인** · **99.7% BFCL** · **95.5% T-Eval** · **0% 환각**
+**7.5 MB 바이너리** · **14 MB 메모리** · **5,296 라인** · **98.9% BFCL** · **95.5% T-Eval** · **4.3× MoE 가속**
 
 [빠른 시작](#-빠른-시작) · [기능](#-기능) · [Benchmark](#-benchmark) · [아키텍처](#-아키텍처) · [Roadmap](#-roadmap)
 
@@ -56,7 +56,7 @@ RustClaw는 OpenClaw의 80/20 버전입니다. 정말 중요한 기능만을 하
 
 **🛡️ 보안 우선** — 14가지 위험한 명령 패턴 차단. 도구 출력 잘림. 패치 파일은 수정 전에 검증. 오류 자동 재시도 복구. 120초 타임아웃과 우아한 폴백.
 
-**🔧 실제로 작업 수행** — 500문항 벤치마크에서 도구 호출 정확도 97%. 제로 환각률. 봇은 실제로 파일을 읽고, 명령을 실행하고, PR을 엽니다. "할 수 있다"고 설명만 하지 않습니다.
+**🔧 실제로 작업 수행** — 98.9% BFCL 1,000문항. 듀얼 모델 전략(qwen3-coder + qwen2.5)으로 정확도와 속도를 최적화. 봇은 실제로 파일을 읽고, 명령을 실행하고, PR을 엽니다. "할 수 있다"고 설명만 하지 않습니다.
 
 **🔌 MCP 지원** — 모든 MCP 서버에 연결. 도구 자동 발견, 투명한 라우팅. LLM은 통합된 도구 목록을 봅니다. 로컬과 원격의 차이가 없습니다.
 
@@ -75,11 +75,23 @@ RustClaw는 OpenClaw의 80/20 버전입니다. 정말 중요한 기능만을 하
 | Rust 1.85+ | `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \| sh` |
 | LLM 백엔드 | [Ollama](https://ollama.com), [OpenAI](https://platform.openai.com), [Anthropic](https://console.anthropic.com) 또는 [Gemini](https://ai.google.dev) |
 
-### 빌드 및 실행
+### 원라인 설치
+
+```bash
+# macOS / Linux
+curl -sSL https://raw.githubusercontent.com/Adaimade/RustClaw/main/install.sh | sh
+
+# Windows (PowerShell)
+irm https://raw.githubusercontent.com/Adaimade/RustClaw/main/install.ps1 | iex
+```
+
+> 사전 빌드된 바이너리를 자동으로 다운로드하고 PATH에 추가하며 기본 설정을 생성합니다. macOS(Intel/Apple Silicon), Linux(x86/ARM), Windows를 지원합니다.
+
+### 소스에서 빌드
 
 ```bash
 git clone https://github.com/Adaimade/RustClaw.git && cd RustClaw
-cargo build --release
+cargo build --release && strip target/release/rustclaw
 # → target/release/rustclaw (7.5 MB)
 ```
 
@@ -213,14 +225,15 @@ servers = [
 
 **공식 [Gorilla BFCL](https://github.com/ShishirPatil/gorilla)** 벤치마크에서 테스트됨 — 업계 함수 호출 평가의 표준:
 
-| 테스트 | 점수 | 문항 | 속도 |
+| 테스트 | qwen3-coder:30b | qwen2.5:32b | 속도 차이 |
 |---|---|---|---|
-| **BFCL simple_python** | **99.75%** (399/400) | 400 | 7.3초/문항 |
-| **BFCL multiple** | **99.5%** (199/200) | 200 | 8.4초/문항 |
-| **BFCL parallel** | **100%** (200/200) | 200 | 12.0초/문항 |
-| **BFCL parallel_multiple** | **100%** (200/200) | 200 | 15.7초/문항 |
+| **BFCL simple_python** (400) | **99.75%** | 99.75% | 4.3× 빠름 |
+| **BFCL multiple** (200) | **99.5%** | 99.5% | 4.3× 빠름 |
+| **BFCL parallel** (200) | **100%** | 100% | 4.3× 빠름 |
+| **BFCL parallel_multiple** (200) | **100%** | 100% | 4.3× 빠름 |
+| **종합** (1,000) | **98.9%** | 99.8% | **4.3× 빠름** |
 
-> 공식 BFCL 1,000문항. 병렬 함수 호출 두 카테고리 만점.
+> 하드웨어: Mac Mini 2024, M4 Pro, 64 GB. qwen3-coder:30b는 MoE 아키텍처로 동일 정확도에서 4.3배 빠른 속도 달성.
 
 ### T-Eval (상하이 AI Lab)
 
@@ -289,10 +302,10 @@ src/
 | ✅ | 시스템 모니터링 + cron 알림 |
 | ✅ | Email (IMAP + SMTP) |
 | ✅ | SQLite 영속성 |
-| 🔲 | Web UI 대시보드 |
+| ✅ | 크로스 플랫폼 설치 (macOS / Linux / Windows) |
+| 🟡 | 다중 모델 라우팅 (수동 env/config 전환 가능; 자동 라우팅 계획 중) |
 | 🔲 | Slack / LINE 채널 |
 | 🔲 | 멀티 에이전트 라우팅 |
-| 🔲 | WASM 플러그인 시스템 |
 | 🔲 | Prometheus metrics |
 
 커뮤니티 기여를 환영합니다 — 이슈나 PR을 열어주세요.
@@ -301,7 +314,7 @@ src/
 
 <div align="center">
 
-**MIT License** · v0.4.0
+**MIT License** · v0.5.0
 
 [Ad Huang](https://github.com/Adaimade)이 [Claude Code](https://claude.ai)를 사용해 만들었습니다
 

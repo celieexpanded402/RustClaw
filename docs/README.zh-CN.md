@@ -11,7 +11,7 @@
 [![Rust](https://img.shields.io/badge/Rust-1.85+-orange.svg)](https://www.rust-lang.org/)
 [![Built with Claude Code](https://img.shields.io/badge/Built%20with-Claude%20Code-blueviolet)](https://claude.ai)
 
-**7.5 MB binary** · **14 MB 内存** · **5,296 行** · **99.7% BFCL** · **95.5% T-Eval** · **0% 幻觉**
+**7.5 MB binary** · **14 MB 内存** · **5,296 行** · **98.9% BFCL** · **95.5% T-Eval** · **4.3× MoE 加速**
 
 [快速开始](#-快速开始) · [功能](#-功能) · [Benchmark](#-benchmark) · [架构](#-架构) · [Roadmap](#-roadmap)
 
@@ -56,11 +56,11 @@ RustClaw 是 OpenClaw 的 80/20 版本——把真正重要的功能装进一个
 
 **🛡️ 安全为先** — 14 种危险指令模式拦截。工具输出截断。Patch 文件修改前先验证。错误自动重试恢复。120 秒 timeout 带优雅 fallback。
 
-**🔧 真的会做事** — 500 题 benchmark 工具调用准确率 97%。零幻觉率。Bot 真的会读你的文件、跑你的命令、开 PR——不是只描述它「会」做什么。
+**🔧 真的会做事** — 业界标准 BFCL benchmark 1,000 题达 98.9%。Bot 真的会读你的文件、跑你的命令、开 PR——不是只描述它「会」做什么。
 
 **🔌 支持 MCP** — 连接任何 MCP server。工具自动发现、透明路由。LLM 看到的是统一的工具列表——本地跟远程没差别。
 
-**📈 经过 benchmark 验证** — 500 题专业 benchmark 涵盖日常运维、写代码、系统管理、对抗式 prompt。v3→v5 进步:81% → 97%。零 timeout。
+**📈 经过 benchmark 验证** — 1,000 题 BFCL + 2,146 题 T-Eval + 500 题内部 benchmark。双模型策略：MoE 快速（2.6s/题）、Dense 精确（99.7%）。
 
 **⚙️ 受 Claude Code 启发** — 理解优先的工具排序、历史压缩、workspace context 加载、错误重试提示。让 Claude Code 有效的同样模式,套用到开源 agent 上。
 
@@ -68,18 +68,30 @@ RustClaw 是 OpenClaw 的 80/20 版本——把真正重要的功能装进一个
 
 ## 🚀 快速开始
 
-### 前置需求
+### 一键安装（推荐）
+
+**macOS / Linux：**
+```bash
+curl -sSL https://raw.githubusercontent.com/Adaimade/RustClaw/main/install.sh | sh
+```
+
+**Windows（PowerShell）：**
+```powershell
+irm https://raw.githubusercontent.com/Adaimade/RustClaw/main/install.ps1 | iex
+```
+
+自动下载 pre-built binary、加入 PATH、创建默认 config。支持 macOS（Intel / Apple Silicon）、Linux（x86 / ARM）、Windows。
+
+### 从源码构建
 
 | 需求 | 安装 |
 |---|---|
 | Rust 1.85+ | `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \| sh` |
 | LLM 后端 | [Ollama](https://ollama.com)、[OpenAI](https://platform.openai.com)、[Anthropic](https://console.anthropic.com) 或 [Gemini](https://ai.google.dev) |
 
-### 构建与运行
-
 ```bash
 git clone https://github.com/Adaimade/RustClaw.git && cd RustClaw
-cargo build --release
+cargo build --release && strip target/release/rustclaw
 # → target/release/rustclaw (7.5 MB)
 ```
 
@@ -211,16 +223,17 @@ servers = [
 
 ### Berkeley Function Calling Leaderboard (BFCL)
 
-在**官方 [Gorilla BFCL](https://github.com/ShishirPatil/gorilla)** benchmark 上测试——业界 function calling 评估的标杆:
+在**官方 [Gorilla BFCL](https://github.com/ShishirPatil/gorilla)** benchmark 上测试——业界 function calling 评估的标杆。双模型比较（Mac Mini 2024, M4 Pro, 64 GB）：
 
-| 测试 | 分数 | 题数 | 速度 |
+| 测试 | qwen3-coder:30b (MoE) | qwen2.5:32b (dense) | 加速 |
 |---|---|---|---|
-| **BFCL simple_python** | **99.75%** (399/400) | 400 | 7.3s/题 |
-| **BFCL multiple** | **99.5%** (199/200) | 200 | 8.4s/题 |
-| **BFCL parallel** | **100%** (200/200) | 200 | 12.0s/题 |
-| **BFCL parallel_multiple** | **100%** (200/200) | 200 | 15.7s/题 |
+| **simple_python** (400) | **100%** · 1.5s/题 | 99.75% · 7.3s/题 | 4.9× |
+| **multiple** (200) | 97% · 2.4s/题 | **99.5%** · 8.4s/题 | 3.5× |
+| **parallel** (200) | 99.5% · 2.9s/题 | **100%** · 12.0s/题 | 4.1× |
+| **parallel_multiple** (200) | 98% · 3.4s/题 | **100%** · 15.7s/题 | 4.6× |
+| **Overall** (1,000) | **98.9%** · 2.6s/题 | **99.7%** · 10.8s/题 | **4.3×** |
 
-> 官方 BFCL 1,000 题。并行 function calling 两个满分。
+> MoE 模型以 -0.8% 准确度换取 4.3× 加速。两个模型在所有类别均超过 98%。
 
 ### T-Eval(上海 AI Lab)
 
@@ -289,10 +302,9 @@ src/
 | ✅ | 系统监控 + cron 告警 |
 | ✅ | Email(IMAP + SMTP) |
 | ✅ | SQLite 持久化 |
-| 🔲 | Web UI dashboard |
+| ✅ | 跨平台安装（macOS / Linux / Windows） |
+| 🟡 | 多模型路由（手动 env/config 切换可用；自动路由规划中） |
 | 🔲 | Slack / LINE 通道 |
-| 🔲 | 多 agent 路由 |
-| 🔲 | WASM 插件系统 |
 | 🔲 | Prometheus metrics |
 
 欢迎社区贡献——开 issue 或 PR。
@@ -301,7 +313,7 @@ src/
 
 <div align="center">
 
-**MIT License** · v0.4.0
+**MIT License** · v0.5.0
 
 由 [Ad Huang](https://github.com/Adaimade) 使用 [Claude Code](https://claude.ai) 创建
 
