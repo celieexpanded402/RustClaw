@@ -303,7 +303,7 @@ src/
 | ✅ | Email (IMAP + SMTP) |
 | ✅ | SQLite 영속성 |
 | ✅ | 크로스 플랫폼 설치 (macOS / Linux / Windows) |
-| 🟡 | 다중 모델 라우팅 (수동 env/config 전환 가능; 자동 라우팅 계획 중) |
+| ✅ | 다중 모델 라우팅 (채널별 config 설정) |
 | 🔲 | Slack / LINE 채널 |
 | 🔲 | 멀티 에이전트 라우팅 |
 | 🔲 | Prometheus metrics |

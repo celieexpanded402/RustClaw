@@ -303,7 +303,7 @@ src/
 | ✅ | Email (IMAP + SMTP) |
 | ✅ | SQLite persistence |
 | ✅ | Cross-platform install (macOS / Linux / Windows) |
-| 🟡 | Multi-model routing (manual env/config switching works; auto-routing planned) |
+| ✅ | Multi-model routing (per-channel model override via config) |
 | 🔲 | Slack / LINE channels |
 | 🔲 | Prometheus metrics |
 

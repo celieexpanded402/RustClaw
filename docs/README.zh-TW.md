@@ -303,7 +303,7 @@ src/
 | ✅ | Email（IMAP + SMTP） |
 | ✅ | SQLite 持久化 |
 | ✅ | 跨平台安裝（macOS / Linux / Windows） |
-| 🟡 | 多模型路由（手動 env/config 切換已可用；自動路由規劃中） |
+| ✅ | 多模型路由（per-channel config 驅動） |
 | 🔲 | Slack / LINE 通道 |
 | 🔲 | Prometheus metrics |
 
