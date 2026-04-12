@@ -11,7 +11,7 @@
 [![Rust](https://img.shields.io/badge/Rust-1.85+-orange.svg)](https://www.rust-lang.org/)
 [![Built with Claude Code](https://img.shields.io/badge/Built%20with-Claude%20Code-blueviolet)](https://claude.ai)
 
-**7.5 MB binary** · **14 MB RAM** · **5,296 lines** · **99.7% BFCL** · **95.5% T-Eval** · **0% hallucination**
+**7.5 MB binary** · **14 MB RAM** · **5,296 lines** · **98.9% BFCL** · **95.5% T-Eval** · **4.3× faster with MoE**
 
 [Quick Start](#-quick-start) · [Features](#-features) · [Benchmark](#-benchmark) · [Architecture](#-architecture) · [Roadmap](#-roadmap)
 
@@ -56,11 +56,11 @@ Built entirely with [Claude Code](https://claude.ai/code) by [Ad Huang](https://
 
 **🛡️ Safe by design** — 14 dangerous command patterns blocked. Tool output truncated. Patch files verified before modification. Error retry with auto-recovery. 120s timeout with graceful fallback.
 
-**🔧 Actually does things** — 97% tool accuracy on 500-question benchmark. 0% hallucination rate. The bot reads your files, runs your commands, creates PRs — it doesn't just describe what it *would* do.
+**🔧 Actually does things** — 98.9% on the industry-standard BFCL benchmark (1,000 questions). The bot reads your files, runs your commands, creates PRs — it doesn't just describe what it *would* do.
 
 **🔌 MCP-ready** — Connect any MCP server. Tools auto-discovered and routed transparently. Your LLM sees one unified tool list — local and remote, no difference.
 
-**📈 Benchmarked and proven** — 500-question professional benchmark covering daily ops, coding, system administration, and adversarial prompts. v3→v5 improvement: 81% → 97%. Zero timeouts.
+**📈 Benchmarked and proven** — 1,000-question BFCL + 2,146-question T-Eval + 500-question internal benchmark. Dual-model strategy: MoE for speed (2.6s/q), dense for accuracy (99.7%).
 
 **⚙️ Claude Code inspired** — Understand-first tool ordering, history compression, workspace context loading, error retry hints. The same patterns that make Claude Code effective, applied to an open-source agent.
 
@@ -68,18 +68,30 @@ Built entirely with [Claude Code](https://claude.ai/code) by [Ad Huang](https://
 
 ## 🚀 Quick Start
 
-### Prerequisites
+### One-line Install (recommended)
+
+**macOS / Linux:**
+```bash
+curl -sSL https://raw.githubusercontent.com/Adaimade/RustClaw/main/install.sh | sh
+```
+
+**Windows (PowerShell):**
+```powershell
+irm https://raw.githubusercontent.com/Adaimade/RustClaw/main/install.ps1 | iex
+```
+
+This downloads the pre-built binary, adds it to PATH, and creates a default config. Works on macOS (Intel/Apple Silicon), Linux (x86/ARM), and Windows.
+
+### Build from Source
 
 | Requirement | Install |
 |---|---|
 | Rust 1.85+ | `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \| sh` |
 | LLM backend | [Ollama](https://ollama.com), [OpenAI](https://platform.openai.com), [Anthropic](https://console.anthropic.com), or [Gemini](https://ai.google.dev) |
 
-### Build & Run
-
 ```bash
 git clone https://github.com/Adaimade/RustClaw.git && cd RustClaw
-cargo build --release
+cargo build --release && strip target/release/rustclaw
 # → target/release/rustclaw (7.5 MB)
 ```
 
@@ -211,16 +223,17 @@ Auto-scan repos · auto-PR from issues · system monitoring alerts · email clas
 
 ### Berkeley Function Calling Leaderboard (BFCL)
 
-Tested on the **official [Gorilla BFCL](https://github.com/ShishirPatil/gorilla)** benchmark — the industry standard for evaluating function calling:
+Tested on the **official [Gorilla BFCL](https://github.com/ShishirPatil/gorilla)** benchmark — the industry standard for evaluating function calling. Dual-model comparison on Mac Mini 2024 (M4 Pro, 64 GB):
 
-| Test | Score | Questions | Speed |
+| Test | qwen3-coder:30b (MoE) | qwen2.5:32b (dense) | Speed diff |
 |---|---|---|---|
-| **BFCL simple_python** | **99.75%** (399/400) | 400 | 7.3s/q |
-| **BFCL multiple** | **99.5%** (199/200) | 200 | 8.4s/q |
-| **BFCL parallel** | **100%** (200/200) | 200 | 12.0s/q |
-| **BFCL parallel_multiple** | **100%** (200/200) | 200 | 15.7s/q |
+| **simple_python** (400) | **100%** · 1.5s/q | 99.75% · 7.3s/q | 4.9× |
+| **multiple** (200) | 97% · 2.4s/q | **99.5%** · 8.4s/q | 3.5× |
+| **parallel** (200) | 99.5% · 2.9s/q | **100%** · 12.0s/q | 4.1× |
+| **parallel_multiple** (200) | 98% · 3.4s/q | **100%** · 15.7s/q | 4.6× |
+| **Overall** (1,000) | **98.9%** · 2.6s/q | **99.7%** · 10.8s/q | **4.3×** |
 
-> 1,000 questions on the official BFCL benchmark. Two perfect scores on parallel function calling.
+> MoE model trades -0.8% accuracy for 4.3× speed. Both models exceed 98% across all categories.
 
 ### T-Eval (Shanghai AI Lab)
 
@@ -289,10 +302,9 @@ src/
 | ✅ | System monitoring + cron alerts |
 | ✅ | Email (IMAP + SMTP) |
 | ✅ | SQLite persistence |
-| 🔲 | Web UI dashboard |
+| ✅ | Cross-platform install (macOS / Linux / Windows) |
+| 🟡 | Multi-model routing (manual env/config switching works; auto-routing planned) |
 | 🔲 | Slack / LINE channels |
-| 🔲 | Multi-agent routing |
-| 🔲 | WASM plugin system |
 | 🔲 | Prometheus metrics |
 
 Community contributions welcome — open an issue or PR.
@@ -301,7 +313,7 @@ Community contributions welcome — open an issue or PR.
 
 <div align="center">
 
-**MIT License** · v0.4.0
+**MIT License** · v0.5.0
 
 Created by [Ad Huang](https://github.com/Adaimade) with [Claude Code](https://claude.ai)
 
