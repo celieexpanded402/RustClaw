@@ -30,6 +30,14 @@ native-tls = "0.2"
 lettre = "0.11"
 rustmem = { git = "https://github.com/Adaimade/R-Mem.git" }
 
+[features]
+vendored-openssl = ["dep:openssl"]
+
+[dependencies.openssl]
+version = "0.10"
+features = ["vendored"]
+optional = true
+
 [profile.release]
 opt-level = "z"
 lto = true

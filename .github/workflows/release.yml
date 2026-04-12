@@ -57,7 +57,7 @@ jobs:
 
       - name: Build (cross)
         if: matrix.use_cross
-        run: cross build --release --target ${{ matrix.target }}
+        run: cross build --release --target ${{ matrix.target }} --features vendored-openssl
 
       - name: Build (cargo)
         if: "!matrix.use_cross"
