@@ -94,14 +94,25 @@ impl MemoryManager {
     // ── Learn: extract + store to appropriate scopes ─────────────────
 
     /// Process a completed exchange. Non-blocking (spawns background task).
+    /// Only learns when conversation is mature (>=6 messages) and input is
+    /// substantive (>15 chars), avoiding garbage from greetings and commands.
     pub async fn learn(&self, session_id: &str, user_text: &str, _assistant_text: &str) {
+        // Skip short messages — "hi", "列出 Docker" don't contain personal facts
+        if user_text.chars().count() < 15 {
+            return;
+        }
+
+        // Skip early conversation — wait until at least 3 exchanges (6 messages)
+        let history = self.sessions.get_history(session_id).await;
+        if history.len() < 6 {
+            return;
+        }
+
         let rmem = Arc::clone(&self.rmem);
         let user_scope = extract_user_scope(session_id);
-        let _local_scope = session_id.to_string();
         let text = user_text.to_string();
 
         tokio::spawn(async move {
-            // Store to user scope (personal facts persist across channels)
             if let Err(e) = rmem.add(&user_scope, &text).await {
                 warn!(%e, "R-Mem learn failed for user scope");
             } else {
